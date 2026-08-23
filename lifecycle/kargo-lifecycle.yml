@@ -1,0 +1,48 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/
+versioning:
+  scheme: uri-path
+  current: v1
+  spec_version: 1.0.0
+  base: https://api.kargo.zone/v1
+  docs: https://docs.kargo.ai/rest-api
+  note: 'Only the REST Document Intake API is versioned. The public GraphQL endpoint
+    (/public_graphql) carries no version segment.'
+deprecation:
+  policy_url: null
+  sunset_header: false
+  note: 'Kargo publishes no deprecation or sunset policy, and no RFC 8594
+    Deprecation/Sunset header support. It does, however, mark a whole surface as
+    legacy in prose: the GraphQL API is described in the docs index under "Legacy" as
+    "Our original integration method, maintained for existing integrations." No end
+    date, migration deadline, or replacement mapping is published for it.'
+  legacy_surfaces:
+  - surface: Kargo Public GraphQL API
+    endpoint: https://api.kargo.zone/public_graphql
+    status: legacy (maintained for existing integrations)
+    successor: 'Document Intake REST API + Unified Endpoint API'
+    end_of_life: null
+    source: https://docs.kargo.ai/
+deprecated_operations: []
+sla:
+  url: null
+  uptime_target: null
+status_page:
+  url: null
+  probed:
+  - url: https://status.mykargo.com/
+    status: 404
+  - url: https://status.kargo.ai/
+    status: 000
+  - url: https://status.kargo.zone/
+    status: 000
+  note: 'No public status page found on any Kargo host.'
+changelog:
+  url: null
+  note: 'No dated API changelog or release-notes page is published. The docs site
+    (Docusaurus, docs.mykargo.com / docs.kargo.ai) carries no changelog route and the
+    sitemap lists no versioned docs.'
+observed:
+  docs_last_modified: '2026-08-22'
+  source: 'Last-Modified header on https://docs.kargo.ai/'

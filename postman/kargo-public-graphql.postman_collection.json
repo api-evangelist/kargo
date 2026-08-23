@@ -1,0 +1,660 @@
+{
+  "info": {
+    "_postman_id": "kargo-public-graphql-api",
+    "name": "Kargo Public GraphQL API",
+    "description": "Collection for the Kargo Public GraphQL API at https://api.kargo.zone/public_graphql.\n\nAuthentication: Auth0 JWT — set the `access_token` collection variable with your Bearer token.\n\nAll requests inherit the Bearer token auth defined at the collection level.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.kargo.zone/public_graphql",
+      "type": "string",
+      "description": "Base URL for the public GraphQL endpoint"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "description": "Auth0 JWT access token — populated automatically by the 'Get Access Token' request"
+    },
+    {
+      "key": "client_id",
+      "value": "",
+      "type": "string",
+      "description": "Auth0 client_id provided by Kargo"
+    },
+    {
+      "key": "client_secret",
+      "value": "",
+      "type": "string",
+      "description": "Auth0 client_secret provided by Kargo"
+    }
+  ],
+  "item": [
+    {
+      "name": "Get Access Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.collectionVariables.set('access_token', json.access_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"client_id\": \"{{client_id}}\",\n  \"client_secret\": \"{{client_secret}}\",\n  \"audience\": \"https://api.kargo.zone/public_graphql\",\n  \"grant_type\": \"client_credentials\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://mykargo.us.auth0.com/oauth/token",
+          "protocol": "https",
+          "host": ["mykargo", "us", "auth0", "com"],
+          "path": ["oauth", "token"]
+        },
+        "description": "Obtains an Auth0 access token using client credentials.\n\n1. Set the `client_id` and `client_secret` collection variables with the credentials provided by Kargo.\n2. Send this request — the `access_token` collection variable is automatically populated via the test script.\n3. All subsequent GraphQL requests will use that token via the collection-level Bearer auth."
+      }
+    },
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Introspection Schema",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query IntrospectionQuery {\\n  __schema {\\n    queryType { name }\\n    mutationType { name }\\n    subscriptionType { name }\\n    types {\\n      ...FullType\\n    }\\n    directives {\\n      name\\n      description\\n      locations\\n      args {\\n        ...InputValue\\n      }\\n    }\\n  }\\n}\\n\\nfragment FullType on __Type {\\n  kind\\n  name\\n  description\\n  fields(includeDeprecated: true) {\\n    name\\n    description\\n    args {\\n      ...InputValue\\n    }\\n    type {\\n      ...TypeRef\\n    }\\n    isDeprecated\\n    deprecationReason\\n  }\\n  inputFields {\\n    ...InputValue\\n  }\\n  interfaces {\\n    ...TypeRef\\n  }\\n  enumValues(includeDeprecated: true) {\\n    name\\n    description\\n    isDeprecated\\n    deprecationReason\\n  }\\n  possibleTypes {\\n    ...TypeRef\\n  }\\n}\\n\\nfragment InputValue on __InputValue {\\n  name\\n  description\\n  type { ...TypeRef }\\n  defaultValue\\n}\\n\\nfragment TypeRef on __Type {\\n  kind\\n  name\\n  ofType {\\n    kind\\n    name\\n    ofType {\\n      kind\\n      name\\n      ofType {\\n        kind\\n        name\\n        ofType {\\n          kind\\n          name\\n          ofType {\\n            kind\\n            name\\n            ofType {\\n              kind\\n              name\\n              ofType {\\n                kind\\n                name\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n  }\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Fetches the full GraphQL schema via introspection. Returns all types, fields, arguments, enums, and directives available in the API. Useful for exploring the schema or importing it into a GraphQL client."
+          }
+        },
+        {
+          "name": "ping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { ping }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Health check — returns true if the API is reachable."
+          }
+        },
+        {
+          "name": "businesses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  businesses {\\n    slug\\n    name\\n    facilities {\\n      slug\\n      name\\n      address {\\n        addressOne\\n        addressTwo\\n        city\\n        state\\n        zip\\n      }\\n      docks {\\n        slug\\n        displayName\\n        facilityId\\n        businessId\\n      }\\n    }\\n  }\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Retrieves a global list of Business objects stored by Kargo. Individual Business details are restricted by permission scope."
+          }
+        },
+        {
+          "name": "shipment by ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetShipment($id: Int!) {\\n  shipment(id: $id) {\\n    id\\n    status\\n    shippingDirection\\n    purchaseOrder\\n    carrier\\n    carrierService\\n    customerShipmentIdentifier\\n    arrivedAt\\n    loadingStartAt\\n    loadingEndAt\\n    departedAt\\n    expectedArrivalAt\\n    facility {\\n      slug\\n      name\\n    }\\n    dock {\\n      slug\\n      displayName\\n    }\\n    statusEvents {\\n      status\\n      displayName\\n      completed\\n      completedAt\\n    }\\n    orders {\\n      externalId\\n      orderNumber\\n      direction\\n      status\\n      carrier\\n    }\\n    cargo {\\n      manifest {\\n        name\\n        partID\\n        quantity\\n      }\\n      items {\\n        partID\\n        quantity\\n        occurredAt\\n        direction\\n      }\\n    }\\n    documents {\\n      id\\n      type\\n      fileName\\n      fileUrl\\n      uploadedAt\\n    }\\n  }\\n}\",\n  \"variables\": {\n    \"id\": 12345\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Retrieves a single Shipment object by Kargo-ID. Replace the `id` variable with the target shipment's integer ID."
+          }
+        },
+        {
+          "name": "pushMessages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetPushMessages($input: PushMessageFilter!) {\\n  pushMessages(input: $input) {\\n    id\\n    messageType\\n    message\\n    sentAt\\n    facilitySlug\\n    businessSlug\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"since\": \"2024-01-01T00:00:00Z\",\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": null\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Retrieves all push messages since a given timestamp for a business or facility. `facilitySlug` is optional — omit to get messages for all facilities."
+          }
+        },
+        {
+          "name": "kargoAgent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  kargoAgent {\\n    version\\n    token\\n  }\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Downloads the current Kargo agent implementation. Returns a single-use download token valid for 5 minutes. Use the token at: api.kargo.zone/download_agent_with_token?token=<token>"
+          }
+        },
+        {
+          "name": "facility shipments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query FacilityShipments($businessSlug: String!, $facilitySlug: String!, $filter: ShipmentFilter) {\\n  businesses {\\n    slug\\n    facilities {\\n      slug\\n      shipments(filter: $filter) {\\n        id\\n        status\\n        shippingDirection\\n        purchaseOrder\\n        carrier\\n        arrivedAt\\n        departedAt\\n        expectedArrivalAt\\n        dock {\\n          slug\\n          displayName\\n        }\\n        statusEvents {\\n          status\\n          displayName\\n          completed\\n          completedAt\\n        }\\n      }\\n    }\\n  }\\n}\",\n  \"variables\": {\n    \"filter\": {\n      \"since\": \"2024-01-01T00:00:00Z\",\n      \"before\": \"2024-12-31T23:59:59Z\",\n      \"shippingDirection\": null\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Lists shipments for all accessible facilities with an optional date filter. `shippingDirection` can be SHIPPING, RECEIVING, MIXED, or UNKNOWN."
+          }
+        },
+        {
+          "name": "facility orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query FacilityOrders {\\n  businesses {\\n    facilities {\\n      slug\\n      orders(filter: { startDate: \\\"2024-01-01\\\", endDate: \\\"2024-12-31\\\", direction: INBOUND }) {\\n        externalId\\n        orderNumber\\n        direction\\n        status\\n        purchaseOrder\\n        carrier\\n        carrierService\\n        requestedShipDate\\n        requestedDeliveryDate\\n        shipperName\\n        consigneeName\\n        bolNumber\\n        shipmentId\\n        items {\\n          id\\n          identifier\\n          sku\\n          quantity\\n          quantityUnit\\n          description\\n        }\\n      }\\n    }\\n  }\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Lists Order objects for a facility within a date range. `direction` can be INBOUND or OUTBOUND."
+          }
+        },
+        {
+          "name": "facility SKUs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query FacilitySKUs {\\n  businesses {\\n    facilities {\\n      slug\\n      SKUs {\\n        business_slug\\n        facility_slug\\n        sku_id\\n        description\\n        unit_of_measure\\n        alternate_sku_ids\\n        sku_metadata\\n        created_at\\n        updated_at\\n      }\\n    }\\n  }\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Lists all SKUs associated with each accessible facility."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mutations",
+      "item": [
+        {
+          "name": "createShipmentAndOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateShipmentAndOrder($input: CreateShipmentAndOrderInput!) {\\n  createShipmentAndOrder(input: $input) {\\n    shipment {\\n      id\\n      status\\n      shippingDirection\\n      expectedArrivalAt\\n    }\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"shipment\": {\n        \"businessSlug\": \"your-business-slug\",\n        \"facilitySlug\": \"your-facility-slug\",\n        \"shipmentNumber\": \"SHIP-001\",\n        \"expectedArrivalAt\": \"2024-06-15T10:00:00Z\",\n        \"direction\": \"RECEIVING\",\n        \"carrier\": \"XPO Logistics\",\n        \"carrierService\": \"LTL\",\n        \"trailerNumber\": \"TR-12345\",\n        \"dockSlug\": \"D11\",\n        \"status\": \"SCHEDULED\",\n        \"statusOccurredAt\": \"2024-06-14T08:00:00Z\"\n      },\n      \"orders\": [\n        {\n          \"direction\": \"INBOUND\",\n          \"orderType\": \"PO\",\n          \"purchaseOrder\": \"PO-98765\",\n          \"orderNumber\": \"ORD-001\",\n          \"requestedDeliveryDate\": \"2024-06-15\",\n          \"carrier\": \"XPO Logistics\",\n          \"carrierService\": \"LTL\",\n          \"items\": [\n            {\n              \"quantityUnit\": \"PALLET\",\n              \"quantity\": 10,\n              \"sku\": \"SKU-ABC123\",\n              \"description\": \"Widget A\"\n            }\n          ]\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Creates a new shipment along with its associated order and order items in a single request."
+          }
+        },
+        {
+          "name": "updateShipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateShipment($input: UpdateShipmentInput!) {\\n  updateShipment(input: $input) {\\n    success\\n    id\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": \"your-facility-slug\",\n      \"shipmentNumber\": \"SHIP-001\",\n      \"status\": \"AT_FACILITY\",\n      \"statusOccurredAt\": \"2024-06-15T09:30:00Z\",\n      \"carrier\": \"XPO Logistics\",\n      \"carrierService\": \"LTL\",\n      \"trailerNumber\": \"TR-12345\",\n      \"dockSlug\": \"D11\",\n      \"driverName\": \"John Doe\",\n      \"driverLicensePlate\": \"ABC1234\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Updates shipment status from an external scheduling system. `status` can be SCHEDULED, AT_FACILITY, DOOR_ASSIGNED, or CHECKED_OUT."
+          }
+        },
+        {
+          "name": "createOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateOrder($input: OrderInput!) {\\n  createOrder(input: $input) {\\n    success\\n    id\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": \"your-facility-slug\",\n      \"orderNumber\": \"ORD-001\",\n      \"direction\": \"INBOUND\",\n      \"orderType\": \"PO\",\n      \"purchaseOrder\": \"PO-98765\",\n      \"requestedShipDate\": \"2024-06-14\",\n      \"requestedDeliveryDate\": \"2024-06-15\",\n      \"carrier\": \"XPO Logistics\",\n      \"carrierService\": \"LTL\",\n      \"bolNumber\": \"BOL-12345\",\n      \"items\": [\n        {\n          \"quantityUnit\": \"PALLET\",\n          \"quantity\": 10,\n          \"sku\": \"SKU-ABC123\",\n          \"description\": \"Widget A\",\n          \"lot\": \"LOT-001\"\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Creates a new order. `quantityUnit` can be PALLET, CASE, or UNIT."
+          }
+        },
+        {
+          "name": "createOrUpdateOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateOrUpdateOrder($input: OrderInput!) {\\n  createOrUpdateOrder(input: $input) {\\n    success\\n    id\\n    type\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": \"your-facility-slug\",\n      \"orderNumber\": \"ORD-001\",\n      \"direction\": \"INBOUND\",\n      \"purchaseOrder\": \"PO-98765\",\n      \"carrier\": \"XPO Logistics\",\n      \"items\": [\n        {\n          \"quantityUnit\": \"PALLET\",\n          \"quantity\": 10,\n          \"sku\": \"SKU-ABC123\",\n          \"description\": \"Widget A\"\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Creates or updates an order matched by `orderNumber`. The `type` field in the response indicates whether this was a CREATE or UPDATE operation."
+          }
+        },
+        {
+          "name": "addItemsToOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation AddItemsToOrder($input: AddItemsToOrderInput!) {\\n  addItemsToOrder(input: $input) {\\n    success\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"order-external-id-here\",\n      \"items\": [\n        {\n          \"quantityUnit\": \"PALLET\",\n          \"quantity\": 5,\n          \"sku\": \"SKU-XYZ789\",\n          \"description\": \"Widget B\",\n          \"lpn\": \"LPN-001\"\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Appends items to an existing order by order `externalId`."
+          }
+        },
+        {
+          "name": "deleteItemsFromOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteItemsFromOrder($input: DeleteItemsFromOrderInput!) {\\n  deleteItemsFromOrder(input: $input) {\\n    success\\n    deletedIdentifiers\\n    orderDeleted\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"order-external-id-here\",\n      \"identifiers\": [\"identifier-1\", \"identifier-2\"]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Deletes order items by their identifier values. If all items are removed the order itself may be deleted (`orderDeleted: true`)."
+          }
+        },
+        {
+          "name": "upsertSKUs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpsertSKUs($input: UpsertSKUInput!) {\\n  upsertSKUs(input: $input) {\\n    numRecordsAdded\\n    numRecordsUpdated\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"business_slug\": \"your-business-slug\",\n      \"facility_slug\": \"your-facility-slug\",\n      \"SKUs\": [\n        {\n          \"sku_id\": \"SKU-ABC123\",\n          \"description\": \"Widget A\",\n          \"unit_of_measure\": \"PALLET\",\n          \"alternate_sku_ids\": [\"ALT-SKU-001\"],\n          \"sku_metadata\": \"{\\\"color\\\": \\\"blue\\\"}\"\n        }\n      ]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Creates or updates SKU(s) for a given facility. Returns counts of added and updated records."
+          }
+        },
+        {
+          "name": "deleteSKUs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteSKUs($input: DeleteSKUInput!) {\\n  deleteSKUs(input: $input) {\\n    numRecordsDeleted\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"business_slug\": \"your-business-slug\",\n      \"facility_slug\": \"your-facility-slug\",\n      \"SKUIDs\": [\"SKU-ABC123\", \"SKU-XYZ789\"]\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Deletes SKU(s) for a given facility by their IDs."
+          }
+        },
+        {
+          "name": "createException",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateException($input: CreateExceptionInput!) {\\n  createException(input: $input) {\\n    exceptionId\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"shipmentId\": 12345,\n      \"palletId\": null,\n      \"priority\": \"HIGH\",\n      \"customerExceptionDescription\": \"Damaged pallet detected upon arrival.\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Creates a Customer Exception in the Kargo system. Appears on the dashboard as 'Customer Exception'. Viewable at https://mykargo.com/exceptions/{exceptionId}. `priority` is LOW or HIGH. Set `palletId` for pallet-level exceptions, omit for shipment-level."
+          }
+        },
+        {
+          "name": "processPayload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ProcessPayload($input: ProcessPayloadInput!) {\\n  processPayload(input: $input) {\\n    success\\n    message\\n    loggingId\\n  }\\n}\",\n  \"variables\": {\n    \"input\": {\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": \"your-facility-slug\",\n      \"payload\": {\n        \"key\": \"value\"\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Processes a JSON payload after verifying facility permissions. The `payload` field accepts arbitrary JSON."
+          }
+        },
+        {
+          "name": "parseImage (multipart upload)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "operations",
+                  "value": "{\"query\": \"mutation ($file: Upload!) { parseImage(input: { businessSlug: \\\"your-business-slug\\\", facilitySlug: \\\"your-facility-slug\\\", file: $file, metadata: [{ key: \\\"label_id\\\", value: \\\"ABC123\\\" }] }) { readResults { name value confidence locations { x y } } requestId templateIds metadata { key value } } }\", \"variables\": { \"file\": null } }",
+                  "type": "text",
+                  "description": "GraphQL multipart request envelope"
+                },
+                {
+                  "key": "map",
+                  "value": "{\"0\": [\"variables.file\"]}",
+                  "type": "text",
+                  "description": "Maps the file field to the GraphQL variable"
+                },
+                {
+                  "key": "0",
+                  "type": "file",
+                  "src": [],
+                  "description": "The image file to parse (JPEG, PNG, etc.)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "Parses an image using Kargo templates via multipart/form-data upload (GraphQL multipart request spec).\n\nThe `Authorization: Bearer <token>` header is inherited from the collection.\n\nSelect the image file in the `0` form field. Adjust `businessSlug`, `facilitySlug`, and `metadata` in the `operations` field.\n\nEquivalent curl:\n```\ncurl https://api.kargo.zone/public_graphql \\\n  -F operations='{\"query\": \"mutation ($file: Upload!) {parseImage(input:{businessSlug:\\\"<slug>\\\",facilitySlug:\\\"<slug>\\\",file:$file,metadata:[{key:\\\"id1\\\",value:\\\"abc\\\"}]}){readResults{name value confidence}}}\", \"variables\": {\"file\": null}}' \\\n  -F map='{\"0\": [\"variables.file\"]}' \\\n  -F 0=@image.jpg \\\n  --header \"authorization: Bearer YOUR_TOKEN\"\n```"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "description": "WebSocket subscriptions — not directly executable in Postman's REST mode. Use Postman's WebSocket client or a GraphQL client that supports graphql-ws protocol at wss://api.kargo.zone/public_graphql.",
+      "item": [
+        {
+          "name": "pushMessage subscription (reference)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"subscription PushMessageSubscription($filter: PushMessageSubscriptionFilter!) {\\n  pushMessage(filter: $filter) {\\n    id\\n    messageType\\n    message\\n    sentAt\\n    facilitySlug\\n    businessSlug\\n  }\\n}\",\n  \"variables\": {\n    \"filter\": {\n      \"businessSlug\": \"your-business-slug\",\n      \"facilitySlug\": null\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}",
+              "host": ["{{base_url}}"]
+            },
+            "description": "⚠️ Reference only — subscriptions require a WebSocket connection using the graphql-ws protocol.\n\nConnect to: wss://api.kargo.zone/public_graphql\n\nThis subscription receives real-time Kargo Push messages (PALLET_EVENT, SHIPMENT_COMPLETE). It's an alternative to the webhook-based approach. Use `facilitySlug: null` to receive messages for all facilities under the business."
+          }
+        }
+      ]
+    }
+  ]
+}

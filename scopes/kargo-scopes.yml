@@ -1,0 +1,39 @@
+generated: '2026-08-23'
+method: probed
+source: https://mykargo.us.auth0.com/.well-known/openid-configuration
+docs: https://docs.kargo.ai/authentication
+summary:
+  api_scopes_published: false
+  note: 'Kargo''s public API uses the OAuth 2.0 client-credentials grant with an
+    `audience` of https://api.kargo.zone/public_graphql and no `scope` parameter.
+    Kargo publishes no scope or permission reference for the API audience, so there
+    are no API scopes to record. Authorization is enforced per business/facility on
+    the token (the OpenAPI documents a 403 "Token lacks permission for the given
+    business/facility"), not by scope.'
+schemes:
+- name: auth0-client-credentials
+  source: https://docs.kargo.ai/authentication
+  flows:
+  - flow: clientCredentials
+    tokenUrl: https://mykargo.us.auth0.com/oauth/token
+    audience: https://api.kargo.zone/public_graphql
+scopes: []
+authorization_server_scopes_supported:
+  note: 'These are the OIDC scopes advertised by Kargo''s Auth0 tenant discovery
+    document for interactive sign-in to the Kargo dashboard. They are Auth0 standard
+    OIDC scopes and do NOT gate the public API audience.'
+  values:
+  - openid
+  - profile
+  - offline_access
+  - name
+  - given_name
+  - family_name
+  - nickname
+  - email
+  - email_verified
+  - picture
+  - created_at
+  - identities
+  - phone
+  - address

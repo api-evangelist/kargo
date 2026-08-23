@@ -1,0 +1,101 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/webhooks/shipment
+spec_type: none
+note: 'Kargo has a real event surface but publishes no AsyncAPI document. This file is
+  the captured webhook + subscription catalog, not a specification. Direction matters
+  here: the webhook API is Kargo pushing INTO a customer-hosted endpoint, so the
+  customer implements the server and Kargo is the client.'
+surfaces:
+- kind: webhook
+  name: Webhook (Push) API
+  direction: kargo-to-customer
+  transport: HTTPS POST
+  host: customer-hosted (Kargo posts to an endpoint the customer exposes)
+  authentication:
+    scheme: HTTP Basic
+    header: 'Authorization: Basic <password>'
+  docs: https://docs.kargo.ai/webhooks/shipment
+- kind: graphql-subscription
+  name: pushMessage
+  direction: kargo-to-customer
+  transport: GraphQL subscription over the public GraphQL endpoint
+  endpoint: https://api.kargo.zone/public_graphql
+  signature: 'pushMessage(filter: PushMessageSubscriptionFilter!): PushMessage!'
+  docs: https://docs.kargo.ai/graphql/api/subscriptions/push-message
+  note: 'Documented by Kargo as "an alternative to the webhook based approach". A
+    pushMessages query also exists for polling the same messages.'
+- kind: file-transfer
+  name: End-of-shipment file transfer
+  direction: kargo-to-customer
+  transport: SFTP or email
+  formats:
+  - CSV
+  - EDI
+  - text
+  docs: https://docs.kargo.ai/
+events:
+- name: shipmentComplete
+  title: Shipment Completion
+  route: /api/shipmentComplete
+  method: POST
+  trigger: A shipment finishes processing through the Kargo towers.
+  docs: https://docs.kargo.ai/webhooks/shipment
+  payload_fields:
+  - name: kargoShipmentId
+    description: The ID of the shipment in the Kargo platform.
+  - name: orders
+    description: List of order numbers on the shipment.
+  - name: url
+    description: Link to the shipment in the Kargo dashboard (athena.mykargo.com).
+  - name: dockId
+    description: Dock at which the shipment was processed.
+  - name: pallets
+    description: Array of pallet-level objects, each carrying the pallet payload below.
+- name: palletProcessed
+  title: Pallet Level Push
+  method: POST
+  trigger: 'Every pallet that passes through a Kargo tower or lift camera, once Kargo
+    has finished processing it.'
+  docs: https://docs.kargo.ai/webhooks/pallet
+  ordering_caveat: 'If a pallet is both loaded and unloaded you receive two events;
+    Kargo states the consumer must cancel out the load/unload pair.'
+  payload_fields:
+  - name: businessSlug
+    description: Business slug as defined by Kargo.
+  - name: facilitySlug
+    description: Facility slug; with businessSlug identifies the facility.
+  - name: kargoShipmentId
+    description: The ID of the shipment in the Kargo platform.
+  - name: kargoPalletId
+    description: The ID of the pallet in the Kargo platform.
+  - name: occurredAt
+    description: UTC timestamp in ISO 8601 for when the pallet passed a Kargo tower.
+  - name: url
+    description: URL linking to the pallet media in the Kargo dashboard.
+  - name: direction
+    description: 'LOADING or UNLOADING.'
+  - name: orders
+    description: List of orders to which this pallet belongs.
+  - name: dockId
+    description: Dock at which the pallet was observed.
+  customer_specific_fields:
+    note: 'Beyond the fixed fields above, the payload carries label fields configured
+      per customer during integration. Values always arrive as lists because a label
+      can carry multiples of a field. Kargo assigns whatever field names the customer
+      wants.'
+    published_examples:
+    - LPN
+    - SKUs
+    - ExpirationDate
+    - LotNumber
+delivery:
+  retries: undocumented
+  signing: none published (HTTP Basic on the request, no payload signature or timestamp)
+  replay_protection: none published
+  ordering: not guaranteed (see the LOADING/UNLOADING caveat above)
+gaps:
+- 'No AsyncAPI document.'
+- 'No published retry/backoff policy, no delivery-failure semantics, and no webhook
+  event log or replay endpoint.'
+- 'No payload signature (HMAC) — authentication is a shared Basic password only.'

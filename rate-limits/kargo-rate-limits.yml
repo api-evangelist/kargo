@@ -1,0 +1,21 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/
+limit_count: 0
+note: 'Kargo publishes no rate limits for any of its API surfaces. The REST Document
+  Intake OpenAPI declares no 429 response on any operation, the docs contain no
+  throttling, quota or burst guidance, and no RateLimit-*, X-RateLimit-* or Retry-After
+  header is documented or observed. The only runtime constraint Kargo publishes is the
+  24-hour Auth0 access-token lifetime, with an explicit instruction to cache the token
+  rather than request one per call — which reads as an implicit limit on the token
+  endpoint but is not stated as one.'
+limits: []
+response_headers: []
+exhaustion_status_code: null
+evidence:
+- url: https://api.kargo.zone/v1/docs/openapi.yaml
+  status: 200
+  finding: 'No 429 response declared on createDocument, upsertSkuMaster or getSkuMaster.'
+- url: https://docs.kargo.ai/authentication
+  status: 200
+  finding: 'Token caching guidance only; no request-rate figures.'

@@ -1,23 +1,159 @@
 aid: kargo
 name: Kargo
-description: 'Kargo is a company surfaced via the API Evangelist harvest backlog (source: secondary-market)
-  and added to the network as a stub for full-pipeline profiling.'
+description: 'Kargo (Kargo Technologies, kargo.ai) builds an AI-powered smart loading
+  dock for warehouses and distribution centers. Camera towers (Kargo Tower) and forklift-mounted
+  cameras (Kargo Lift) apply computer vision to every pallet that moves through a dock
+  door, reading LPN, SKU, lot code and expiration-date labels to automate shipping
+  and receiving, verify loads and shipments, detect damage, and feed inventory visibility,
+  shelf-life management, FSMA traceability, claims management, financial reconciliation
+  and automated ASNs back into the customer WMS. Kargo publishes a public integration
+  surface for that data exchange: a REST Document Intake API described by an OpenAPI
+  3.1 document, a public GraphQL API with open anonymous introspection, a single unified
+  JSON endpoint, a webhook (push) API at shipment and pallet level plus a GraphQL subscription
+  alternative, and flat-file ingest over email, SFTP or AS2. All programmatic access is
+  Auth0 OAuth 2.0 client-credentials bearer tokens.'
 url: https://raw.githubusercontent.com/api-evangelist/kargo/refs/heads/main/apis.yml
+image: https://www.kargo.ai/assets/images/favicon/apple-touch-icon.png
 x-type: company
 x-source: harvest:secondary-market
-x-tier: stub
-x-tier-reason: harvest
 specificationVersion: '0.20'
 created: '2026-08-23'
 modified: '2026-08-23'
 tags:
 - Company
-apis: []
+- Logistics
+- Supply Chain
+- Warehouse
+- Computer Vision
+- Artificial Intelligence
+- Shipping
+- Inventory
+- Industrial Automation
+- Freight
+- GraphQL
+- Webhooks
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
+apis:
+- name: Kargo Document Intake API
+  description: 'REST API for programmatic access to Kargo platform resources. Accepts
+    a single flattened document carrying shipment, order and order-item data, or a
+    shipment-level document with multiple orders, and upserts it against the Kargo
+    platform. Also carries the SKU master surface. JSON and XML request bodies, RFC
+    9457 problem+json errors, and an interactive Swagger reference.'
+  humanURL: https://docs.kargo.ai/rest-api
+  baseURL: https://api.kargo.zone/v1
+  tags:
+  - Documents
+  - SKU Master
+  - Shipping
+  - Logistics
+  properties:
+  - type: OpenAPI
+    url: openapi/kargo-document-intake-openapi.yml
+  - type: Overlay
+    url: overlays/kargo-document-intake-overlay.yaml
+  - type: APIReference
+    url: https://api.kargo.zone/v1/docs/
+  - type: Documentation
+    url: https://docs.kargo.ai/rest-api
+- name: Kargo Public GraphQL API
+  description: 'Kargo''s original public integration method, maintained for existing
+    integrations and still the surface behind the Unified Endpoint API. Exposes queries
+    for businesses, shipments, push messages and the Kargo agent download, mutations
+    for creating and updating shipments, orders, order items, SKUs, exceptions and
+    parsed images, and a pushMessage subscription as an alternative to webhooks. Anonymous
+    introspection is open.'
+  humanURL: https://docs.kargo.ai/graphql/
+  baseURL: https://api.kargo.zone/public_graphql
+  tags:
+  - GraphQL
+  - Shipping
+  - Logistics
+  - Webhooks
+  properties:
+  - type: GraphQL
+    url: graphql/kargo-public-graphql.graphql
+  - type: Documentation
+    url: https://docs.kargo.ai/graphql/
+  - type: Postman
+    url: postman/kargo-public-graphql.postman_collection.json
 common:
 - type: Website
-  url: https://www.hiive.com/securities/kargo-stock
+  url: https://www.kargo.ai/
+- type: DeveloperPortal
+  url: https://docs.kargo.ai/
+- type: Documentation
+  url: https://docs.kargo.ai/
+- type: APIReference
+  url: https://api.kargo.zone/v1/docs/
+- type: GettingStarted
+  url: https://docs.kargo.ai/basic_examples
+- type: Authentication
+  url: authentication/kargo-authentication.yml
+- type: Blog
+  url: https://www.kargo.ai/blog
+- type: GitHubOrganization
+  url: https://github.com/mykargo
+- type: SignUp
+  url: https://athena.mykargo.com/
+- type: Login
+  url: https://athena.mykargo.com/
+- type: TermsOfService
+  url: https://www.kargo.ai/terms-of-service
+- type: PrivacyPolicy
+  url: https://www.kargo.ai/privacy-policy
+- type: Support
+  url: https://info.mykargo.com/demo
+- type: Postman
+  url: https://docs.kargo.ai/kargo-public-graphql.postman_collection.json
+- type: Sandbox
+  url: sandbox/kargo-sandbox.yml
+- type: Webhooks
+  url: asyncapi/kargo-push-webhooks.yml
+- type: Conventions
+  url: conventions/kargo-conventions.yml
+- type: ErrorCatalog
+  url: errors/kargo-problem-types.yml
+- type: Lifecycle
+  url: lifecycle/kargo-lifecycle.yml
+- type: Conformance
+  url: conformance/kargo-conformance.yml
+- type: DataModel
+  url: data-model/kargo-data-model.yml
+- type: DomainSecurity
+  url: security/kargo-domain-security.yml
+- type: WellKnown
+  url: well-known/kargo-well-known.yml
+- type: OpenIDConnect
+  url: well-known/kargo-openid-configuration.json
+- type: Packages
+  url: packages/kargo-packages.yml
+- type: RateLimits
+  url: rate-limits/kargo-rate-limits.yml
+- type: Plans
+  url: plans/kargo-plans-pricing.yml
+- type: LLMsTxt
+  url: llms/kargo-llms.txt
+- type: AgentSkill
+  url: skills/_index.yml
+- type: Idempotency
+  url: conventions/kargo-conventions.yml
+- type: ToolCrosswalk
+  url: mcp/kargo-tool-crosswalk.yml
+- type: Examples
+  url: examples/kargo-request-examples.yml
+- type: GraphQL
+  url: graphql/kargo-public-graphql.graphql
+- type: HowItWorks
+  url: https://www.kargo.ai/how-it-works
+- type: Careers
+  url: https://www.kargo.ai/careers
+x-enrichment:
+  date: '2026-08-23'
+  status: enriched
+  artifacts_added: 28
+  pass: local-v1

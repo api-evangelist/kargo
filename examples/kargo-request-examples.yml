@@ -1,0 +1,464 @@
+generated: '2026-08-23'
+method: derived
+source: openapi/kargo-document-intake-openapi.yml
+note: Named request examples published by Kargo inside its own OpenAPI document, extracted here as a standalone
+  catalog. Every value below is verbatim from the spec at https://api.kargo.zone/v1/docs/openapi.yaml.
+examples:
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: orderWithFivePallets
+  summary: Create an outbound order with five pallet items
+  value:
+    orderNumber: TEST-EXAMPLE-ORDER-001
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    items:
+    - lpn: LPNABC
+      sku: SKU123
+      quantity: 10
+      quantityUnit: CASE
+      caseSerials:
+      - id: 00000000000379386070
+        quantity: 10
+    - lpn: LPNABC
+      sku: SKU456
+      quantity: 8
+      quantityUnit: CASE
+    - lpn: LPNDEF
+      sku: SKU789
+      quantity: 12
+      quantityUnit: CASE
+    - lpn: LPNGHI
+      sku: SKU123
+      quantity: 6
+      quantityUnit: CASE
+    - lpn: LPNJKL
+      sku: SKU999
+      quantity: 15
+      quantityUnit: CASE
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: appendOrderItem
+  summary: Append an order item
+  value:
+    orderNumber: TEST-EXAMPLE-ORDER-001
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orderItemUpdateStrategy: APPEND
+    items:
+    - lpn: LPNNEW
+      sku: SKUAPPEND
+      quantity: 1
+      quantityUnit: UNIT
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: mergeOrderItemByLpnAndSku
+  summary: Update or add an order item by LPN + SKU
+  value:
+    orderNumber: TEST-EXAMPLE-ORDER-001
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orderItemUpdateStrategy: MERGE
+    items:
+    - lpn: LPNABC
+      sku: SKU123
+      quantity: 5
+      quantityUnit: CASE
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: deleteOrderItemByLpnAndSku
+  summary: Delete an order item by LPN + SKU
+  value:
+    orderNumber: TEST-EXAMPLE-ORDER-001
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orderItemUpdateStrategy: DELETE
+    items:
+    - lpn: LPNABC
+      sku: SKU123
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: overwriteOrderItems
+  summary: Replace all order items
+  value:
+    orderNumber: TEST-EXAMPLE-ORDER-001
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orderItemUpdateStrategy: OVERWRITE
+    items:
+    - lpn: LPNREPLACE001
+      sku: SKUREPLACE001
+      quantity: 2
+      quantityUnit: UNIT
+    - lpn: LPNREPLACE002
+      sku: SKUREPLACE002
+      quantity: 3
+      quantityUnit: CASE
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: shipmentWithMultipleOrders
+  summary: Shipment with multiple orders
+  value:
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orders:
+    - orderNumber: TEST-EXAMPLE-ORDER-001
+      items:
+      - lpn: LPNMULTI001
+        sku: SKUMULTI001
+        quantity: 10
+        quantityUnit: CASE
+        caseSerials:
+        - id: 00000000000379386070
+          quantity: 10
+    - orderNumber: TEST-EXAMPLE-ORDER-002
+      items:
+      - lpn: LPNMULTI002
+        sku: SKUMULTI002
+        quantity: 8
+        quantityUnit: CASE
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: shipmentWithMultipleOrdersShipmentLevelStrategy
+  summary: Shipment with multiple orders using shipment level strategy
+  value:
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orderItemUpdateStrategy: MERGE
+    orders:
+    - orderNumber: TEST-EXAMPLE-ORDER-001
+      items:
+      - lpn: LPNMULTI101
+        sku: SKUMULTI101
+        quantity: 10
+        quantityUnit: CASE
+    - orderNumber: TEST-EXAMPLE-ORDER-002
+      items:
+      - lpn: LPNMULTI102
+        sku: SKUMULTI102
+        quantity: 8
+        quantityUnit: CASE
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/json
+  name: shipmentWithMultipleOrdersOrderLevelStrategies
+  summary: Shipment with multiple orders using order level strategies
+  value:
+    business: kargo
+    facility: sf
+    direction: OUTBOUND
+    shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+    orders:
+    - orderNumber: TEST-EXAMPLE-ORDER-001
+      orderItemUpdateStrategy: APPEND
+      items:
+      - lpn: LPNMULTI201
+        sku: SKUMULTI201
+        quantity: 4
+        quantityUnit: CASE
+    - orderNumber: TEST-EXAMPLE-ORDER-002
+      orderItemUpdateStrategy: DELETE
+      items:
+      - lpn: LPNMULTI202
+        sku: SKUMULTI202
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: orderWithFivePallets
+  summary: Create an outbound XML order with five pallet items
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <items>\n    <lpn>LPNABC</lpn>\n    <sku>SKU123</sku>\n    <quantity>10</quantity>\n    <quantityUnit>CASE</quantityUnit>\n\
+    \    <caseSerials>\n      <id>00000000000379386070</id>\n      <quantity>10</quantity>\n    </caseSerials>\n\
+    \  </items>\n  <items>\n    <lpn>LPNABC</lpn>\n    <sku>SKU456</sku>\n    <quantity>8</quantity>\n\
+    \    <quantityUnit>CASE</quantityUnit>\n  </items>\n  <items>\n    <lpn>LPNDEF</lpn>\n    <sku>SKU789</sku>\n\
+    \    <quantity>12</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n  <items>\n    <lpn>LPNGHI</lpn>\n\
+    \    <sku>SKU123</sku>\n    <quantity>6</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n\
+    \  <items>\n    <lpn>LPNJKL</lpn>\n    <sku>SKU999</sku>\n    <quantity>15</quantity>\n    <quantityUnit>CASE</quantityUnit>\n\
+    \  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: appendOrderItem
+  summary: Append an order item
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNNEW</lpn>\n \
+    \   <sku>SKUAPPEND</sku>\n    <quantity>1</quantity>\n    <quantityUnit>UNIT</quantityUnit>\n  </items>\n\
+    </Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: mergeOrderItemByLpnAndSku
+  summary: Update or add an order item by LPN + SKU
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNABC</lpn>\n  \
+    \  <sku>SKU123</sku>\n    <quantity>5</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n\
+    </Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: deleteOrderItemByLpnAndSku
+  summary: Delete an order item by LPN + SKU
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNABC</lpn>\n \
+    \   <sku>SKU123</sku>\n  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: overwriteOrderItems
+  summary: Replace all order items
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>OVERWRITE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNREPLACE001</lpn>\n\
+    \    <sku>SKUREPLACE001</sku>\n    <quantity>2</quantity>\n    <quantityUnit>UNIT</quantityUnit>\n\
+    \  </items>\n  <items>\n    <lpn>LPNREPLACE002</lpn>\n    <sku>SKUREPLACE002</sku>\n    <quantity>3</quantity>\n\
+    \    <quantityUnit>CASE</quantityUnit>\n  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: shipmentWithMultipleOrders
+  summary: Shipment with multiple orders
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n\
+    \    <items>\n      <lpn>LPNMULTI001</lpn>\n      <sku>SKUMULTI001</sku>\n      <quantity>10</quantity>\n\
+    \      <quantityUnit>CASE</quantityUnit>\n      <caseSerials>\n        <id>00000000000379386070</id>\n\
+    \        <quantity>10</quantity>\n      </caseSerials>\n    </items>\n  </orders>\n  <orders>\n  \
+    \  <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n    <items>\n      <lpn>LPNMULTI002</lpn>\n\
+    \      <sku>SKUMULTI002</sku>\n      <quantity>8</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: shipmentWithMultipleOrdersShipmentLevelStrategy
+  summary: Shipment with multiple orders using shipment level strategy
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>\n\
+    \  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n    <items>\n      <lpn>LPNMULTI101</lpn>\n\
+    \      <sku>SKUMULTI101</sku>\n      <quantity>10</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n  \
+    \  <items>\n      <lpn>LPNMULTI102</lpn>\n      <sku>SKUMULTI102</sku>\n      <quantity>8</quantity>\n\
+    \      <quantityUnit>CASE</quantityUnit>\n    </items>\n  </orders>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: application/xml
+  name: shipmentWithMultipleOrdersOrderLevelStrategies
+  summary: Shipment with multiple orders using order level strategies
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n\
+    \    <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>\n    <items>\n      <lpn>LPNMULTI201</lpn>\n\
+    \      <sku>SKUMULTI201</sku>\n      <quantity>4</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n  \
+    \  <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>\n    <items>\n      <lpn>LPNMULTI202</lpn>\n\
+    \      <sku>SKUMULTI202</sku>\n    </items>\n  </orders>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: orderWithFivePallets
+  summary: Create an outbound XML order with five pallet items
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <items>\n    <lpn>LPNABC</lpn>\n    <sku>SKU123</sku>\n    <quantity>10</quantity>\n    <quantityUnit>CASE</quantityUnit>\n\
+    \    <caseSerials>\n      <id>00000000000379386070</id>\n      <quantity>10</quantity>\n    </caseSerials>\n\
+    \  </items>\n  <items>\n    <lpn>LPNABC</lpn>\n    <sku>SKU456</sku>\n    <quantity>8</quantity>\n\
+    \    <quantityUnit>CASE</quantityUnit>\n  </items>\n  <items>\n    <lpn>LPNDEF</lpn>\n    <sku>SKU789</sku>\n\
+    \    <quantity>12</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n  <items>\n    <lpn>LPNGHI</lpn>\n\
+    \    <sku>SKU123</sku>\n    <quantity>6</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n\
+    \  <items>\n    <lpn>LPNJKL</lpn>\n    <sku>SKU999</sku>\n    <quantity>15</quantity>\n    <quantityUnit>CASE</quantityUnit>\n\
+    \  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: appendOrderItem
+  summary: Append an order item
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNNEW</lpn>\n \
+    \   <sku>SKUAPPEND</sku>\n    <quantity>1</quantity>\n    <quantityUnit>UNIT</quantityUnit>\n  </items>\n\
+    </Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: mergeOrderItemByLpnAndSku
+  summary: Update or add an order item by LPN + SKU
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNABC</lpn>\n  \
+    \  <sku>SKU123</sku>\n    <quantity>5</quantity>\n    <quantityUnit>CASE</quantityUnit>\n  </items>\n\
+    </Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: deleteOrderItemByLpnAndSku
+  summary: Delete an order item by LPN + SKU
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNABC</lpn>\n \
+    \   <sku>SKU123</sku>\n  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: overwriteOrderItems
+  summary: Replace all order items
+  value: "<Document>\n  <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n  <business>kargo</business>\n\
+    \  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n\
+    \  <orderItemUpdateStrategy>OVERWRITE</orderItemUpdateStrategy>\n  <items>\n    <lpn>LPNREPLACE001</lpn>\n\
+    \    <sku>SKUREPLACE001</sku>\n    <quantity>2</quantity>\n    <quantityUnit>UNIT</quantityUnit>\n\
+    \  </items>\n  <items>\n    <lpn>LPNREPLACE002</lpn>\n    <sku>SKUREPLACE002</sku>\n    <quantity>3</quantity>\n\
+    \    <quantityUnit>CASE</quantityUnit>\n  </items>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: shipmentWithMultipleOrders
+  summary: Shipment with multiple orders
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n\
+    \    <items>\n      <lpn>LPNMULTI001</lpn>\n      <sku>SKUMULTI001</sku>\n      <quantity>10</quantity>\n\
+    \      <quantityUnit>CASE</quantityUnit>\n      <caseSerials>\n        <id>00000000000379386070</id>\n\
+    \        <quantity>10</quantity>\n      </caseSerials>\n    </items>\n  </orders>\n  <orders>\n  \
+    \  <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n    <items>\n      <lpn>LPNMULTI002</lpn>\n\
+    \      <sku>SKUMULTI002</sku>\n      <quantity>8</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: shipmentWithMultipleOrdersShipmentLevelStrategy
+  summary: Shipment with multiple orders using shipment level strategy
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>\n\
+    \  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n    <items>\n      <lpn>LPNMULTI101</lpn>\n\
+    \      <sku>SKUMULTI101</sku>\n      <quantity>10</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n  \
+    \  <items>\n      <lpn>LPNMULTI102</lpn>\n      <sku>SKUMULTI102</sku>\n      <quantity>8</quantity>\n\
+    \      <quantityUnit>CASE</quantityUnit>\n    </items>\n  </orders>\n</Document>\n"
+- operationId: createDocument
+  path: /documents
+  method: POST
+  media_type: text/xml
+  name: shipmentWithMultipleOrdersOrderLevelStrategies
+  summary: Shipment with multiple orders using order level strategies
+  value: "<Document>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <direction>OUTBOUND</direction>\n\
+    \  <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>\n\
+    \    <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>\n    <items>\n      <lpn>LPNMULTI201</lpn>\n\
+    \      <sku>SKUMULTI201</sku>\n      <quantity>4</quantity>\n      <quantityUnit>CASE</quantityUnit>\n\
+    \    </items>\n  </orders>\n  <orders>\n    <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>\n  \
+    \  <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>\n    <items>\n      <lpn>LPNMULTI202</lpn>\n\
+    \      <sku>SKUMULTI202</sku>\n    </items>\n  </orders>\n</Document>\n"
+- operationId: upsertSkuMaster
+  path: /sku_master
+  method: POST
+  media_type: application/json
+  name: batchUpsert
+  summary: Upsert multiple SKUs
+  value:
+    business: kargo
+    facility: sf
+    skus:
+    - sku_id: TEST-SKU-001
+      description: Test SKU 001
+      unit_of_measure: CASE
+      unit_of_weight: LB
+      alternate_sku_ids:
+      - ALT-001
+      - UPC-001
+      cases_per_pallet: 55
+      cases_per_layer: 7
+      layers_per_pallet: 10
+      sku_metadata:
+        source: local-test
+        category: snack
+    - sku_id: TEST-SKU-002
+      description: Test SKU 002
+      unit_of_measure: EACH
+      cases_per_pallet: 43
+      cases_per_layer: 6
+      layers_per_pallet: 8
+      sku_metadata:
+        source: local-test
+- operationId: upsertSkuMaster
+  path: /sku_master
+  method: POST
+  media_type: application/json
+  name: partialUpdate
+  summary: Update only provided fields
+  value:
+    business: kargo
+    facility: sf
+    skus:
+    - sku_id: TEST-SKU-001
+      description: Updated SKU description
+- operationId: upsertSkuMaster
+  path: /sku_master
+  method: POST
+  media_type: application/xml
+  name: batchUpsertXml
+  summary: Upsert multiple SKUs with XML
+  value: "<SkuMasterUpsertRequest>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <skus>\n\
+    \    <sku_id>TEST-SKU-001</sku_id>\n    <description>Test SKU 001</description>\n    <unit_of_measure>CASE</unit_of_measure>\n\
+    \    <unit_of_weight>LB</unit_of_weight>\n    <alternate_sku_ids>ALT-001</alternate_sku_ids>\n   \
+    \ <alternate_sku_ids>UPC-001</alternate_sku_ids>\n    <cases_per_pallet>55</cases_per_pallet>\n  \
+    \  <cases_per_layer>7</cases_per_layer>\n    <layers_per_pallet>10</layers_per_pallet>\n    <sku_metadata>\n\
+    \      <source>local-test</source>\n      <category>snack</category>\n    </sku_metadata>\n  </skus>\n\
+    \  <skus>\n    <sku_id>TEST-SKU-002</sku_id>\n    <description>Test SKU 002</description>\n    <unit_of_measure>EACH</unit_of_measure>\n\
+    \    <cases_per_pallet>43</cases_per_pallet>\n    <cases_per_layer>6</cases_per_layer>\n    <layers_per_pallet>8</layers_per_pallet>\n\
+    \    <sku_metadata>\n      <source>local-test</source>\n    </sku_metadata>\n  </skus>\n</SkuMasterUpsertRequest>\n"
+- operationId: upsertSkuMaster
+  path: /sku_master
+  method: POST
+  media_type: text/xml
+  name: batchUpsertXml
+  summary: Upsert multiple SKUs with XML
+  value: "<SkuMasterUpsertRequest>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <skus>\n\
+    \    <sku_id>TEST-SKU-001</sku_id>\n    <description>Test SKU 001</description>\n    <unit_of_measure>CASE</unit_of_measure>\n\
+    \    <unit_of_weight>LB</unit_of_weight>\n    <alternate_sku_ids>ALT-001</alternate_sku_ids>\n   \
+    \ <alternate_sku_ids>UPC-001</alternate_sku_ids>\n    <cases_per_pallet>55</cases_per_pallet>\n  \
+    \  <cases_per_layer>7</cases_per_layer>\n    <layers_per_pallet>10</layers_per_pallet>\n    <sku_metadata>\n\
+    \      <source>local-test</source>\n      <category>snack</category>\n    </sku_metadata>\n  </skus>\n\
+    </SkuMasterUpsertRequest>\n"
+example_count: 28

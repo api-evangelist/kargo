@@ -1,0 +1,72 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for the Kargo Document Intake API
+  version: 1.0.0
+extends: openapi/kargo-document-intake-openapi.yml
+x-generated: '2026-08-23'
+x-method: generated
+x-source: openapi/kargo-document-intake-openapi.yml
+actions:
+- target: $.info
+  description: 'Record provenance and the API Evangelist profile of this contract.'
+  update:
+    x-apievangelist-slug: kargo
+    x-apievangelist-source: https://api.kargo.zone/v1/docs/openapi.yaml
+    x-apievangelist-harvested: '2026-08-23'
+    x-apievangelist-provider: Kargo (Kargo Technologies, kargo.ai)
+- target: $.servers
+  description: 'The published spec declares a relative server (/v1), which is correct
+    for the Swagger UI it is served from but unusable by a generated client. Name the
+    absolute host Kargo''s own documentation states.'
+  update:
+  - url: https://api.kargo.zone/v1
+    description: 'Production. Named verbatim at https://docs.kargo.ai/rest-api and used
+      as the OAuth audience host.'
+- target: $.components.securitySchemes.bearerAuth
+  description: 'The spec declares a bare HTTP bearer scheme. Record where the bearer
+    actually comes from, which is documented but not in the contract.'
+  update:
+    bearerFormat: JWT
+    description: 'Auth0-issued JWT. Obtain via the OAuth 2.0 client-credentials grant
+      against https://mykargo.us.auth0.com/oauth/token with audience
+      https://api.kargo.zone/public_graphql. Tokens are valid 24 hours and Kargo
+      instructs callers to cache them.'
+    x-token-url: https://mykargo.us.auth0.com/oauth/token
+    x-audience: https://api.kargo.zone/public_graphql
+    x-grant-type: client_credentials
+- target: $.paths['/documents'].post
+  description: 'Flag the destructive default. OVERWRITE applies when items are present
+    and no strategy is given, and it removes every existing item not in the request.'
+  update:
+    x-agentic-access:
+      action-class: acting
+      consequence: write
+      reversibility: partial
+      audit: required
+    x-destructive-default: true
+    x-destructive-default-note: 'When `items` are supplied and `orderItemUpdateStrategy`
+      is omitted, Kargo applies OVERWRITE and removes every existing order item not
+      present in the request. Always send the complete desired item list, or set the
+      strategy explicitly.'
+    x-idempotency: 'Upsert on business + facility + direction + orderNumber. Idempotent
+      at shipment and order level; NOT idempotent at item level under OVERWRITE (rows
+      are replaced and receive new ids) or APPEND (a repeat returns 409).'
+- target: $.paths['/sku_master'].post
+  update:
+    x-agentic-access:
+      action-class: acting
+      consequence: write
+      reversibility: graphql-only
+      audit: required
+    x-reversal: 'No REST delete exists. The reversal path is the GraphQL deleteSKUs
+      mutation at https://api.kargo.zone/public_graphql.'
+- target: $.paths['/sku_master'].get
+  update:
+    x-agentic-access:
+      action-class: connected
+      consequence: read
+- target: $.components.schemas.Problem
+  description: 'Record that problem types are not dereferenceable.'
+  update:
+    x-rfc: RFC 9457
+    x-type-uris: 'about:blank only — Kargo mints no dereferenceable problem-type URIs.'

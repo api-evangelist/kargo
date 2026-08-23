@@ -1,0 +1,100 @@
+generated: '2026-08-23'
+method: derived
+source: openapi/kargo-document-intake-openapi.yml
+docs: https://docs.kargo.ai/rest-api
+format: rfc9457
+envelope:
+  media_type: application/problem+json
+  schema: Problem
+  fields:
+  - type
+  - title
+  - status
+  - detail
+  note: 'Every 4xx response in the Kargo Document Intake API is declared as
+    application/problem+json against the shared `Problem` schema. The published
+    example uses `"type": "about:blank"`, so Kargo does not (yet) mint dereferenceable
+    problem-type URIs.'
+graphql_errors:
+  note: 'The GraphQL and Unified Endpoint surfaces do not use problem+json. The
+    unified endpoint returns a consistent envelope of `success` (boolean), `message`
+    (human-readable) and `loggingId` (a support/debug correlation identifier).'
+  source: https://docs.kargo.ai/unified-endpoint
+problems:
+- status: 400
+  type: about:blank
+  title: Bad Request
+  detail: Malformed JSON or XML request body.
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 401
+  type: about:blank
+  title: Unauthorized
+  detail: Missing or invalid bearer token.
+  remediation: 'Request a new token from https://mykargo.us.auth0.com/oauth/token with
+    the client-credentials grant and audience https://api.kargo.zone/public_graphql.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 403
+  type: about:blank
+  title: Forbidden
+  detail: Token lacks permission for the given business/facility.
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 404
+  type: about:blank
+  title: Not Found
+  detail: business or facility not found.
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 409
+  type: about:blank
+  title: Conflict
+  detail: 'The document cannot be applied because it would create duplicate or
+    ambiguous data, such as an APPEND request containing an item whose lpn + sku
+    already exists on the matched order, duplicate lpn + sku pairs in the incoming
+    items, or a shipmentNumber conflict.'
+  remediation: Use MERGE to update existing items, or OVERWRITE to replace the full item list.
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 415
+  type: about:blank
+  title: Unsupported Media Type
+  detail: 'Unsupported media type; use application/json, application/xml, or text/xml.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 422
+  type: about:blank
+  title: Unprocessable Entity
+  detail: 'Semantically invalid document, such as a bad enum value, invalid item shape
+    for the chosen orderItemUpdateStrategy, or a new order missing business / facility
+    / direction.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+- status: 400
+  type: about:blank
+  title: Bad Request
+  detail: Malformed JSON or XML request body.
+  source_operation: openapi/kargo-document-intake-openapi.yml#upsertSkuMaster
+- status: 404
+  type: about:blank
+  title: Not Found
+  detail: Facility not found.
+  source_operation: openapi/kargo-document-intake-openapi.yml#upsertSkuMaster
+- status: 422
+  type: about:blank
+  title: Unprocessable Entity
+  detail: 'Semantically invalid request, such as missing business or facility, missing
+    sku_id, duplicate sku_id values in the same request, invalid pagination value, or
+    wrong field type.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#upsertSkuMaster
+- status: 422
+  type: about:blank
+  title: Unprocessable Entity
+  detail: 'Invalid query parameter, such as missing business or facility, or invalid
+    limit / offset.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#getSkuMaster
+mdn_errors:
+  note: 'The AS2 flat-file channel reports failures as AS2 MDN dispositions rather
+    than HTTP problem documents.'
+  source: https://docs.kargo.ai/flat_file
+  codes:
+  - code: processed/Error&#58; decryption-failed
+    cause: 'Body was sent base64-encoded rather than binary, or encrypted with an
+      out-of-date certificate.'
+  - code: processed/Error&#58; insufficient-message-security
+    cause: 'Message was not signed, or used the legacy application/x-pkcs7-mime
+      content type. Use application/pkcs7-mime and sign with SHA-256.'

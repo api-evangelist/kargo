@@ -1,0 +1,65 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/authentication
+docs: https://docs.kargo.ai/authentication
+summary:
+  types:
+  - http
+  - oauth2
+  api_key_in: []
+  oauth2_flows:
+  - clientCredentials
+schemes:
+- name: bearerAuth
+  type: http
+  scheme: bearer
+  sources:
+  - openapi/kargo-document-intake-openapi.yml
+  note: 'Declared in the OpenAPI as a bare HTTP bearer scheme; the bearer value is
+    an Auth0-issued JWT obtained through the client-credentials grant below.'
+- name: auth0-client-credentials
+  type: oauth2
+  flows:
+  - flow: clientCredentials
+    tokenUrl: https://mykargo.us.auth0.com/oauth/token
+    audience: https://api.kargo.zone/public_graphql
+    scopes: {}
+  sources:
+  - https://docs.kargo.ai/authentication
+  - well-known/kargo-openid-configuration.json
+authorization_server:
+  issuer: https://mykargo.us.auth0.com/
+  vendor: Auth0
+  discovery: well-known/kargo-openid-configuration.json
+  jwks_uri: https://mykargo.us.auth0.com/.well-known/jwks.json
+  note: 'mykargo.us.auth0.com is Kargo''s own Auth0 tenant; Kargo''s authentication
+    documentation names this exact token endpoint and audience.'
+credentials:
+  issued_by: Kargo (client_id and client_secret are created and provided by Kargo
+    to each customer; there is no self-service key issuance)
+  fields:
+  - name: Business Slug
+    description: Customer business identifier used on every request payload.
+  - name: Facility Slug
+    description: Customer facility identifier used on every request payload.
+  - name: API Client ID
+    description: Auth0 client_id, created and provided by Kargo.
+  - name: API Client Secret
+    description: Auth0 client_secret, created and provided by Kargo.
+request_header: 'Authorization: Bearer <bearer_token>'
+token_lifetime:
+  documented: 'Tokens are valid for 24 hours (docs example returns expires_in 86400);
+    the docs instruct callers to cache the token and use expires_in to decide when
+    to refresh.'
+  source: https://docs.kargo.ai/basic_examples
+webhook_authentication:
+  direction: Kargo -> customer
+  scheme: HTTP Basic
+  header: 'Authorization: Basic <password>'
+  source: https://docs.kargo.ai/webhooks/shipment
+unauthenticated_surface:
+- surface: GraphQL introspection
+  endpoint: https://api.kargo.zone/public_graphql
+  observed: '2026-08-23'
+  note: 'Anonymous POST of a full __schema introspection query returned HTTP 200 and
+    the complete schema; data queries still require a bearer token.'

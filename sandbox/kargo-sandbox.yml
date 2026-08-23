@@ -1,0 +1,60 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/authentication
+summary: 'Kargo publishes an interactive API console for both of its surfaces but no
+  isolated test environment. There is no separate sandbox host, no test-vs-live key
+  prefix, no magic test identifiers, and no fixture or trigger tooling. Requests made
+  from either console go to the production API with production credentials.'
+consoles:
+- name: Kargo API Sandbox (Apollo Sandbox)
+  surface: GraphQL
+  url: https://api.kargo.zone/public_graphql
+  tool: Apollo Sandbox
+  auth: 'Add an Authorization: Bearer <token> header in the Sandbox headers panel.'
+  features:
+  - Full schema browsing via anonymous introspection
+  - File upload against the Upload scalar via the "+Add Files" control, setting the
+    target variable (e.g. input.file) to null and selecting the file
+  source: https://docs.kargo.ai/authentication
+- name: Swagger UI
+  surface: REST
+  url: https://api.kargo.zone/v1/docs/
+  tool: Swagger UI
+  auth: 'Click Authorize and paste "Bearer <ACCESS_TOKEN>".'
+  features:
+  - 'Try it out against POST /documents, POST /sku_master, GET /sku_master'
+  - 'Eight named request examples on POST /documents (orderWithFivePallets,
+    appendOrderItem, mergeOrderItemByLpnAndSku, deleteOrderItemByLpnAndSku,
+    overwriteOrderItems, shipmentWithMultipleOrders,
+    shipmentWithMultipleOrdersShipmentLevelStrategy,
+    shipmentWithMultipleOrdersOrderLevelStrategies) and two on POST /sku_master
+    (batchUpsert, partialUpdate)'
+  source: https://docs.kargo.ai/rest-api
+test_mode:
+  separate_environment: false
+  key_prefixes: []
+  test_values: []
+  test_clock: false
+  note: 'Kargo publishes no test-mode credentials or magic values. The docs use
+    placeholder identifiers only (business "kargo", facility "sf", order numbers
+    prefixed TEST-EXAMPLE-, LPNABC/SKU123), and those are illustrative example values
+    in a walkthrough — not provider-issued test fixtures. They are recorded here as
+    documentation examples, not as usable test data.'
+documentation_examples:
+  business: kargo
+  facility: sf
+  order_numbers:
+  - TEST-EXAMPLE-ORDER-001
+  shipment_numbers:
+  - TEST-EXAMPLE-SHIPMENT-001
+  lpns:
+  - LPNABC
+  - LPNDEF
+  - LPNGHI
+  - LPNJKL
+  skus:
+  - SKU123
+  - SKU456
+  - SKU789
+  - SKU999
+  source: https://docs.kargo.ai/rest-api

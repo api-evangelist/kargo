@@ -1,0 +1,45 @@
+generated: '2026-08-23'
+method: derived
+source: openapi/kargo-document-intake-openapi.yml
+status: candidate
+deployment:
+  mode: none
+  endpoint: null
+  install: null
+  package: null
+  auth: unknown
+  verified: probed
+  note: 'Kargo ships no MCP server. Probed and confirmed absent: mcp.kargo.ai (no DNS),
+    mcp.mykargo.com 404, POST tools/list to api.kargo.zone/mcp, /v1/mcp and
+    /public_mcp all returned 404 "Cannot POST". No @kargo or @mykargo MCP package
+    exists on npm. The tools below are a CANDIDATE list derived by API Evangelist from
+    Kargo''s published OpenAPI operations — Kargo does not publish them and no agent
+    can call them as MCP tools today.'
+server:
+  name: kargo
+  transport: null
+  url: null
+tools:
+- name: create_document
+  description: 'Create or update a shipment, its orders and its order items from a
+    single document. Upserts on business + facility + direction + orderNumber.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#createDocument
+  consequence: write
+  reversibility: 'Item-level only, via orderItemUpdateStrategy DELETE. No shipment or
+    order delete exists. OVERWRITE (the default) destroys unlisted items.'
+- name: upsert_sku_master
+  description: 'Create or update SKU master records for a business and facility.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#upsertSkuMaster
+  consequence: write
+  reversibility: 'No REST delete published; deleteSKUs exists on the GraphQL surface.'
+- name: get_sku_master
+  description: 'Retrieve SKU master records for a business and facility, optionally
+    filtered by sku_id, with limit/offset pagination.'
+  source_operation: openapi/kargo-document-intake-openapi.yml#getSkuMaster
+  consequence: read
+graphql_candidates:
+  note: 'Kargo''s GraphQL surface carries 5 queries and 11 mutations that have no REST
+    equivalent and would be the larger part of any real MCP server. They are enumerated
+    in mcp/kargo-tool-crosswalk.yml under mcp_only/graphql_only rather than duplicated
+    here.'
+  source: graphql/kargo-public-graphql.graphql

@@ -1,0 +1,176 @@
+generated: '2026-08-23'
+method: derived
+source: openapi/kargo-document-intake-openapi.yml
+also_derived_from: graphql/kargo-public-graphql.graphql
+summary: 'Kargo''s domain is a four-level physical hierarchy — Business owns Facilities,
+  a Facility has Docks, a Shipment arrives at a Dock carrying Orders, an Order carries
+  Order Items, and every Order Item is a physical unit (a pallet or case) identified by
+  an LPN that the vision system reads off a label. The SKU Master is a separate
+  reference table keyed on business + facility + sku_id. The imaging side (Pallet, Label,
+  PalletImage, ShippingItemImage/Video, TaggedImage) hangs off the shipping items and is
+  exposed only on the GraphQL surface.'
+entities:
+- name: Business
+  key: slug
+  surface: graphql
+  description: 'A unique Kargo customer, created during configuration. 1:many with Facility.'
+- name: Facility
+  key: slug
+  surface: graphql
+  description: 'A physical site. Carries an Address and a set of Docks.'
+- name: Dock
+  key: dockId / dockSlug
+  surface: graphql, webhook
+  description: 'A dock door where a Kargo tower observes pallets.'
+- name: Shipment
+  key: id
+  natural_key: business + facility + shipmentNumber
+  surface: rest, graphql, webhook
+  status_enum: ShipmentStatus (graphql); `status` on the REST Shipment schema
+  description: 'The unit of work. Scheduled from customer data, then validated against
+    what the vision system actually observes.'
+- name: Order
+  key: id
+  natural_key: business + facility + direction + orderNumber
+  surface: rest, graphql
+  description: 'A customer order attached to a shipment. Direction is INBOUND or OUTBOUND.'
+- name: OrderItem
+  key: id
+  natural_key: lpn + sku (within an order)
+  surface: rest, graphql
+  description: 'A physical unit on an order. Reference resolution order published by
+    Kargo: identifier when provided, otherwise lpn, then sku.'
+- name: SkuMaster
+  key: business + facility + sku_id
+  surface: rest
+  description: 'Reference data for a SKU: description, units of measure and weight,
+    alternate SKU ids, and the pallet geometry (cases_per_pallet, cases_per_layer,
+    layers_per_pallet) the vision system uses to reason about a stack.'
+- name: Pallet
+  key: kargoPalletId
+  surface: graphql, webhook
+  description: 'An observed physical pallet, with images and read label fields.'
+- name: Label
+  surface: graphql
+  description: 'A label read off a pallet, decomposed into LabelField values with
+    image Coordinates.'
+- name: PushMessage
+  surface: graphql
+  description: 'The event record behind both the webhook push API and the pushMessage
+    subscription. Typed by PushMessageTypes.'
+- name: Exception
+  surface: graphql
+  description: 'A flagged discrepancy, created via createException; typed by
+    ExceptionLevel and ExceptionPriority.'
+relationships:
+- from: Business
+  to: Facility
+  kind: has_many
+  via: facilities
+  source: graphql/kargo-public-graphql.graphql#Business.facilities
+- from: Facility
+  to: Address
+  kind: has_one
+  via: address
+  source: graphql/kargo-public-graphql.graphql#Facility
+- from: Facility
+  to: Dock
+  kind: has_many
+  via: docks
+  source: graphql/kargo-public-graphql.graphql#Facility
+- from: Shipment
+  to: Order
+  kind: has_many
+  via: orders
+  source: openapi/kargo-document-intake-openapi.yml#Shipment.orders
+- from: Shipment
+  to: Facility
+  kind: belongs_to
+  via: facility
+  source: openapi/kargo-document-intake-openapi.yml#Shipment.facility
+- from: Shipment
+  to: ShipmentStatusEvent
+  kind: has_many
+  via: statusEvents
+  source: openapi/kargo-document-intake-openapi.yml#Shipment.statusEvents
+- from: Shipment
+  to: ShipmentAdditionalField
+  kind: has_many
+  via: additionalFields
+  source: openapi/kargo-document-intake-openapi.yml#Document.additionalFields
+- from: Order
+  to: OrderItem
+  kind: has_many
+  via: items
+  source: openapi/kargo-document-intake-openapi.yml#Order.items
+- from: Order
+  to: Shipment
+  kind: belongs_to
+  via: shipmentNumber
+  source: openapi/kargo-document-intake-openapi.yml#Document.shipmentNumber
+- from: OrderItem
+  to: CaseSerial
+  kind: has_many
+  via: caseSerials
+  source: openapi/kargo-document-intake-openapi.yml#OrderItemInput.caseSerials
+- from: OrderItem
+  to: SkuMaster
+  kind: belongs_to
+  via: sku
+  confidence: medium
+  note: 'Not a declared $ref. OrderItemInput.sku and SkuMaster.sku_id are the same
+    business identifier, resolved within a business + facility, but the contract does
+    not model the link.'
+- from: SkuMaster
+  to: Facility
+  kind: belongs_to
+  via: facility
+  source: openapi/kargo-document-intake-openapi.yml#SkuMaster.facility
+- from: PushMessage
+  to: Shipment
+  kind: belongs_to
+  via: kargoShipmentId
+  source: asyncapi/kargo-push-webhooks.yml
+- from: PushMessage
+  to: Pallet
+  kind: belongs_to
+  via: kargoPalletId
+  source: asyncapi/kargo-push-webhooks.yml
+- from: Pallet
+  to: PalletImage
+  kind: has_many
+  via: images
+  source: graphql/kargo-public-graphql.graphql
+identifiers:
+  note: 'Kargo uses no typed id prefixes. Platform ids are opaque numeric strings
+    (shipment 6463000, order 1268000, order item 3700001, pallet 121159700). Natural
+    keys are customer-supplied strings scoped by business + facility.'
+  lpn: 'License Plate Number — the label identifier on a physical pallet. No GS1/SSCC
+    scheme is declared.'
+enums:
+- name: OrderDirection
+  values: [OUTBOUND, INBOUND]
+  source: openapi/kargo-document-intake-openapi.yml
+- name: OrderItemUpdateStrategy
+  values: [APPEND, OVERWRITE, MERGE, DELETE]
+  source: openapi/kargo-document-intake-openapi.yml
+- name: pallet direction (webhook)
+  values: [LOADING, UNLOADING]
+  source: https://docs.kargo.ai/webhooks/pallet
+graphql_only_enums:
+- DimensionUnit
+- EquipmentType
+- ExceptionLevel
+- ExceptionPriority
+- ItemLoadingDirection
+- LayerCountStatus
+- ManagedFieldDefinitionFieldType
+- OrderStatus
+- PalletImageSource
+- PushMessageTypes
+- ServiceType
+- ShipmentStatus
+- ShipmentUpdateStatus
+- ShipperUnitType
+- ShippingDirection
+- WeightUnit

@@ -1,0 +1,141 @@
+generated: '2026-08-23'
+method: derived
+source: openapi/kargo-document-intake-openapi.yml
+also_derived_from: graphql/kargo-public-graphql.graphql
+note: 'Kargo ships no MCP server, so there are no published tools to bind. This
+  crosswalk is the REST <-> GraphQL divergence map instead: Kargo runs two overlapping
+  but non-identical projections of one data core, and neither is a superset. It is the
+  artifact an agent (or an implementer building an MCP server for Kargo) needs in order
+  to know which surface can actually do a given job.'
+surfaces:
+  openapi:
+    file: openapi/kargo-document-intake-openapi.yml
+    endpoint: https://api.kargo.zone/v1
+    gated: false
+    reference: https://api.kargo.zone/v1/docs/
+    operations: 3
+  graphql:
+    file: graphql/kargo-public-graphql.graphql
+    endpoint: https://api.kargo.zone/public_graphql
+    gated: false
+    introspection: 'Open. Anonymous full __schema introspection returned HTTP 200 on
+      2026-08-23; the SDL in this repo is the real schema, not a reconstruction.'
+    queries: 5
+    mutations: 11
+    subscriptions: 1
+    types: 84
+  mcp:
+    endpoint: null
+    gated: null
+    note: 'No MCP server exists. See mcp/kargo-mcp.yml deployment.mode: none.'
+crosswalk:
+- tool: createDocument
+  category: shipment-intake
+  rest:
+  - createDocument
+  graphql:
+  - createShipmentAndOrder
+  - createOrUpdateOrder
+  - addItemsToOrder
+  - deleteItemsFromOrder
+  binding: rest-and-graphql
+  confidence: high
+  note: 'POST /documents is a fan-in: one call does what four GraphQL mutations do
+    separately, selected by orderItemUpdateStrategy. APPEND maps to addItemsToOrder,
+    DELETE to deleteItemsFromOrder, MERGE and OVERWRITE to createOrUpdateOrder with
+    different item semantics, and a new shipment maps to createShipmentAndOrder.'
+- tool: upsertSkuMaster
+  category: reference-data
+  rest:
+  - upsertSkuMaster
+  graphql:
+  - upsertSKUs
+  binding: rest-and-graphql
+  confidence: high
+- tool: getSkuMaster
+  category: reference-data
+  rest:
+  - getSkuMaster
+  graphql: []
+  binding: rest
+  confidence: high
+  note: 'The only READ operation on the REST surface, and the only SKU read on either
+    surface — GraphQL can write SKUs but not list them.'
+graphql_only:
+- field: shipment
+  kind: query
+  reason: 'Read a Shipment by Kargo id. The REST surface has no shipment read at all —
+    POST /documents returns a shipment in its response, but there is no GET.'
+- field: businesses
+  kind: query
+  reason: 'List Business objects and their Facilities. No REST equivalent; a REST
+    client must be told its business and facility slugs out of band.'
+- field: pushMessages
+  kind: query
+  reason: 'Poll all push messages since a timestamp for a business or facility. The
+    only way to recover missed webhook deliveries — there is no REST event log.'
+- field: pushMessage
+  kind: subscription
+  reason: 'Streaming alternative to the webhook push API. No REST equivalent.'
+- field: kargoAgent
+  kind: query
+  reason: 'Issues a 5-minute single-use token to download the Kargo agent binary.
+    Distribution surface, no REST equivalent.'
+- field: ping
+  kind: query
+  reason: 'Liveness check. No REST health endpoint is published.'
+- field: updateShipment
+  kind: mutation
+  reason: 'Update shipment status from an external scheduling system. POST /documents
+    can create or upsert a shipment but does not expose a status transition.'
+- field: createOrder
+  kind: mutation
+  reason: 'Create an order against an existing shipment (PostShipmentCreateOrderInput).'
+- field: deleteSKUs
+  kind: mutation
+  reason: 'Delete SKU master records. The REST surface has upsert and read but no
+    delete — this is the reversal path for upsertSkuMaster and it exists only here.'
+- field: parseImage
+  kind: mutation
+  reason: 'Run Kargo label-parsing templates against a customer-supplied image. This is
+    the computer-vision core exposed directly, and it is the single largest capability
+    with no REST projection.'
+- field: createException
+  kind: mutation
+  reason: 'Create a customer-authored exception in the Kargo system.'
+- field: processPayload
+  kind: mutation
+  reason: 'The Unified Endpoint API. Accepts an arbitrary JSON payload and infers the
+    operation. Documented as its own product surface but implemented as a GraphQL
+    mutation on the same endpoint.'
+rest_only:
+- operation: getSkuMaster
+  capability: SKU master listing with limit/offset pagination
+  reason: 'No GraphQL query returns SKU master records.'
+- capability: XML request bodies
+  operations:
+  - createDocument
+  - upsertSkuMaster
+  reason: 'REST accepts application/xml and text/xml. GraphQL is JSON only.'
+- capability: RFC 9457 problem+json error envelope
+  reason: 'REST returns typed problem documents with HTTP status codes; GraphQL returns
+    a standard errors[] array with HTTP 200.'
+- capability: Correlation-Id request tracing header
+  operations:
+  - createDocument
+  reason: 'GraphQL''s nearest equivalent is the loggingId returned by processPayload,
+    which is server-issued rather than caller-supplied.'
+coverage:
+  rest_operations_total: 3
+  rest_operations_with_graphql_equivalent: 2
+  graphql_fields_total: 17
+  graphql_fields_with_rest_equivalent: 5
+  graphql_only: 12
+  rest_only_capabilities: 4
+  mcp_tools_published: 0
+finding: 'The surface Kargo calls "legacy" is the larger one. The GraphQL API carries
+  every read, the entire event/streaming surface, the only SKU delete, and the
+  image-parsing capability; the REST API carries three operations, XML support and the
+  problem+json envelope. An integrator told to prefer REST because GraphQL is legacy
+  cannot read a shipment, cannot list businesses, cannot recover a missed webhook, and
+  cannot undo a SKU write.'

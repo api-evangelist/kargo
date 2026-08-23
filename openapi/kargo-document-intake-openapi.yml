@@ -1,0 +1,1633 @@
+openapi: 3.1.0
+info:
+  title: Kargo Document Intake API
+  version: 1.0.0
+  description: >
+    Accepts either a single flattened "document" that may carry shipment,
+    order, and order item data, or a shipment level document with multiple
+    orders in `orders`.
+
+    For the existing single order format, the document is upserted against an
+    existing order by `orderNumber`; if no such order exists a new one is
+    created, which also creates the associated shipment.
+
+    For the multi order format, the API processes every entry in `orders` against
+    the same shipment level fields, such as `business`, `facility`, `direction`,
+    and `shipmentNumber`.
+
+    `business`, `facility`, and `direction` are always required. Single order
+    requests require top level `orderNumber`; multi order requests require
+    `shipmentNumber` and a non-empty `orders` list, and each order in the list
+    requires `orderNumber`.
+
+    For client generation or local tooling, download the [OpenAPI YAML spec](/v1/docs/openapi.yaml).
+
+    See the [Document Intake API Handbook](https://docs.kargo.ai/rest-api) for examples and workflow details.
+servers:
+  - url: /v1
+tags:
+  - name: Documents
+  - name: SKU Master
+security:
+  - bearerAuth: []
+paths:
+  /documents:
+    post:
+      operationId: createDocument
+      summary: Create or update a document (shipment / order / order items)
+      description: >
+        Accepts either the existing single order document format or a shipment
+        level document containing multiple orders in `orders`. In single order
+        mode, the API upserts an order identified by the top level `orderNumber`.
+        In multi order mode, the API processes each `orders[]` entry against the
+        same shipment level fields. For `MERGE` and `DELETE`, order items are
+        identified by `lpn` + `sku`. Returns a summary of every entity created,
+        updated, or removed.
+      tags: [Documents]
+      parameters:
+        - name: Correlation-Id
+          in: header
+          required: false
+          description: >
+            Client provided identifier used for request tracing and logging.
+            When supplied, Kargo returns the same value in the response.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Document'
+            examples:
+              orderWithFivePallets:
+                summary: Create an outbound order with five pallet items
+                description: >
+                  This example omits `orderItemUpdateStrategy`; when `items` are provided
+                  without a strategy, Kargo defaults to `OVERWRITE`.
+                value:
+                  orderNumber: TEST-EXAMPLE-ORDER-001
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  items:
+                    - lpn: LPNABC
+                      sku: SKU123
+                      quantity: 10
+                      quantityUnit: CASE
+                      caseSerials:
+                        - id: "00000000000379386070"
+                          quantity: 10
+                    - lpn: LPNABC
+                      sku: SKU456
+                      quantity: 8
+                      quantityUnit: CASE
+                    - lpn: LPNDEF
+                      sku: SKU789
+                      quantity: 12
+                      quantityUnit: CASE
+                    - lpn: LPNGHI
+                      sku: SKU123
+                      quantity: 6
+                      quantityUnit: CASE
+                    - lpn: LPNJKL
+                      sku: SKU999
+                      quantity: 15
+                      quantityUnit: CASE
+              appendOrderItem:
+                summary: Append an order item
+                value:
+                  orderNumber: TEST-EXAMPLE-ORDER-001
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orderItemUpdateStrategy: APPEND
+                  items:
+                    - lpn: LPNNEW
+                      sku: SKUAPPEND
+                      quantity: 1
+                      quantityUnit: UNIT
+              mergeOrderItemByLpnAndSku:
+                summary: Update or add an order item by LPN + SKU
+                value:
+                  orderNumber: TEST-EXAMPLE-ORDER-001
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orderItemUpdateStrategy: MERGE
+                  items:
+                    - lpn: LPNABC
+                      sku: SKU123
+                      quantity: 5
+                      quantityUnit: CASE
+              deleteOrderItemByLpnAndSku:
+                summary: Delete an order item by LPN + SKU
+                value:
+                  orderNumber: TEST-EXAMPLE-ORDER-001
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orderItemUpdateStrategy: DELETE
+                  items:
+                    - lpn: LPNABC
+                      sku: SKU123
+              overwriteOrderItems:
+                summary: Replace all order items
+                value:
+                  orderNumber: TEST-EXAMPLE-ORDER-001
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orderItemUpdateStrategy: OVERWRITE
+                  items:
+                    - lpn: LPNREPLACE001
+                      sku: SKUREPLACE001
+                      quantity: 2
+                      quantityUnit: UNIT
+                    - lpn: LPNREPLACE002
+                      sku: SKUREPLACE002
+                      quantity: 3
+                      quantityUnit: CASE
+              shipmentWithMultipleOrders:
+                summary: Shipment with multiple orders
+                description: >
+                  Creates or updates multiple orders on the same shipment. Each
+                  order is identified by `orderNumber`. Because `orderItemUpdateStrategy` is omitted,
+                  the API defaults to `OVERWRITE` when applying the provided items.
+                value:
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orders:
+                    - orderNumber: TEST-EXAMPLE-ORDER-001
+                      items:
+                        - lpn: LPNMULTI001
+                          sku: SKUMULTI001
+                          quantity: 10
+                          quantityUnit: CASE
+                          caseSerials:
+                            - id: "00000000000379386070"
+                              quantity: 10
+                    - orderNumber: TEST-EXAMPLE-ORDER-002
+                      items:
+                        - lpn: LPNMULTI002
+                          sku: SKUMULTI002
+                          quantity: 8
+                          quantityUnit: CASE
+              shipmentWithMultipleOrdersShipmentLevelStrategy:
+                summary: Shipment with multiple orders using shipment level strategy
+                description: >
+                  Processes multiple orders on the same shipment. The top level
+                  `orderItemUpdateStrategy` is used as the default strategy for
+                  every order because the orders do not provide their own
+                  strategy.
+                value:
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orderItemUpdateStrategy: MERGE
+                  orders:
+                    - orderNumber: TEST-EXAMPLE-ORDER-001
+                      items:
+                        - lpn: LPNMULTI101
+                          sku: SKUMULTI101
+                          quantity: 10
+                          quantityUnit: CASE
+                    - orderNumber: TEST-EXAMPLE-ORDER-002
+                      items:
+                        - lpn: LPNMULTI102
+                          sku: SKUMULTI102
+                          quantity: 8
+                          quantityUnit: CASE
+              shipmentWithMultipleOrdersOrderLevelStrategies:
+                summary: Shipment with multiple orders using order level strategies
+                description: >
+                  Processes multiple orders on the same shipment. Each order
+                  provides its own `orderItemUpdateStrategy`, so no top level
+                  strategy is needed.
+                value:
+                  business: kargo
+                  facility: sf
+                  direction: OUTBOUND
+                  shipmentNumber: TEST-EXAMPLE-SHIPMENT-001
+                  orders:
+                    - orderNumber: TEST-EXAMPLE-ORDER-001
+                      orderItemUpdateStrategy: APPEND
+                      items:
+                        - lpn: LPNMULTI201
+                          sku: SKUMULTI201
+                          quantity: 4
+                          quantityUnit: CASE
+                    - orderNumber: TEST-EXAMPLE-ORDER-002
+                      orderItemUpdateStrategy: DELETE
+                      items:
+                        - lpn: LPNMULTI202
+                          sku: SKUMULTI202
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Document'
+            examples:
+              orderWithFivePallets:
+                summary: Create an outbound XML order with five pallet items
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>10</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                      <caseSerials>
+                        <id>00000000000379386070</id>
+                        <quantity>10</quantity>
+                      </caseSerials>
+                    </items>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU456</sku>
+                      <quantity>8</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNDEF</lpn>
+                      <sku>SKU789</sku>
+                      <quantity>12</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNGHI</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>6</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNJKL</lpn>
+                      <sku>SKU999</sku>
+                      <quantity>15</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              appendOrderItem:
+                summary: Append an order item
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNNEW</lpn>
+                      <sku>SKUAPPEND</sku>
+                      <quantity>1</quantity>
+                      <quantityUnit>UNIT</quantityUnit>
+                    </items>
+                  </Document>
+              mergeOrderItemByLpnAndSku:
+                summary: Update or add an order item by LPN + SKU
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>5</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              deleteOrderItemByLpnAndSku:
+                summary: Delete an order item by LPN + SKU
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                    </items>
+                  </Document>
+              overwriteOrderItems:
+                summary: Replace all order items
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>OVERWRITE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNREPLACE001</lpn>
+                      <sku>SKUREPLACE001</sku>
+                      <quantity>2</quantity>
+                      <quantityUnit>UNIT</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNREPLACE002</lpn>
+                      <sku>SKUREPLACE002</sku>
+                      <quantity>3</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              shipmentWithMultipleOrders:
+                summary: Shipment with multiple orders
+                description: >
+                  Creates or updates multiple orders on the same shipment. Each
+                  order is identified by `orderNumber`. Because `orderItemUpdateStrategy` is omitted,
+                  the API defaults to `OVERWRITE` when applying the provided items.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI001</lpn>
+                        <sku>SKUMULTI001</sku>
+                        <quantity>10</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                        <caseSerials>
+                          <id>00000000000379386070</id>
+                          <quantity>10</quantity>
+                        </caseSerials>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI002</lpn>
+                        <sku>SKUMULTI002</sku>
+                        <quantity>8</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                  </Document>
+              shipmentWithMultipleOrdersShipmentLevelStrategy:
+                summary: Shipment with multiple orders using shipment level strategy
+                description: >
+                  Processes multiple orders on the same shipment. The top level
+                  `orderItemUpdateStrategy` is used as the default strategy for
+                  every order because the orders do not provide their own
+                  strategy.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI101</lpn>
+                        <sku>SKUMULTI101</sku>
+                        <quantity>10</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI102</lpn>
+                        <sku>SKUMULTI102</sku>
+                        <quantity>8</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                  </Document>
+              shipmentWithMultipleOrdersOrderLevelStrategies:
+                summary: Shipment with multiple orders using order level strategies
+                description: >
+                  Processes multiple orders on the same shipment. Each order
+                  provides its own `orderItemUpdateStrategy`, so no top level
+                  strategy is needed.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>
+                      <items>
+                        <lpn>LPNMULTI201</lpn>
+                        <sku>SKUMULTI201</sku>
+                        <quantity>4</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>
+                      <items>
+                        <lpn>LPNMULTI202</lpn>
+                        <sku>SKUMULTI202</sku>
+                      </items>
+                    </orders>
+                  </Document>
+          text/xml:
+            schema:
+              $ref: '#/components/schemas/Document'
+            examples:
+              orderWithFivePallets:
+                summary: Create an outbound XML order with five pallet items
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>10</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                      <caseSerials>
+                        <id>00000000000379386070</id>
+                        <quantity>10</quantity>
+                      </caseSerials>
+                    </items>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU456</sku>
+                      <quantity>8</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNDEF</lpn>
+                      <sku>SKU789</sku>
+                      <quantity>12</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNGHI</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>6</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNJKL</lpn>
+                      <sku>SKU999</sku>
+                      <quantity>15</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              appendOrderItem:
+                summary: Append an order item
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNNEW</lpn>
+                      <sku>SKUAPPEND</sku>
+                      <quantity>1</quantity>
+                      <quantityUnit>UNIT</quantityUnit>
+                    </items>
+                  </Document>
+              mergeOrderItemByLpnAndSku:
+                summary: Update or add an order item by LPN + SKU
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                      <quantity>5</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              deleteOrderItemByLpnAndSku:
+                summary: Delete an order item by LPN + SKU
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNABC</lpn>
+                      <sku>SKU123</sku>
+                    </items>
+                  </Document>
+              overwriteOrderItems:
+                summary: Replace all order items
+                value: |
+                  <Document>
+                    <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>OVERWRITE</orderItemUpdateStrategy>
+                    <items>
+                      <lpn>LPNREPLACE001</lpn>
+                      <sku>SKUREPLACE001</sku>
+                      <quantity>2</quantity>
+                      <quantityUnit>UNIT</quantityUnit>
+                    </items>
+                    <items>
+                      <lpn>LPNREPLACE002</lpn>
+                      <sku>SKUREPLACE002</sku>
+                      <quantity>3</quantity>
+                      <quantityUnit>CASE</quantityUnit>
+                    </items>
+                  </Document>
+              shipmentWithMultipleOrders:
+                summary: Shipment with multiple orders
+                description: >
+                  Creates or updates multiple orders on the same shipment. Each
+                  order is identified by `orderNumber`. Because `orderItemUpdateStrategy` is omitted,
+                  the API defaults to `OVERWRITE` when applying the provided items.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI001</lpn>
+                        <sku>SKUMULTI001</sku>
+                        <quantity>10</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                        <caseSerials>
+                          <id>00000000000379386070</id>
+                          <quantity>10</quantity>
+                        </caseSerials>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI002</lpn>
+                        <sku>SKUMULTI002</sku>
+                        <quantity>8</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                  </Document>
+              shipmentWithMultipleOrdersShipmentLevelStrategy:
+                summary: Shipment with multiple orders using shipment level strategy
+                description: >
+                  Processes multiple orders on the same shipment. The top level
+                  `orderItemUpdateStrategy` is used as the default strategy for
+                  every order because the orders do not provide their own
+                  strategy.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orderItemUpdateStrategy>MERGE</orderItemUpdateStrategy>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI101</lpn>
+                        <sku>SKUMULTI101</sku>
+                        <quantity>10</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <items>
+                        <lpn>LPNMULTI102</lpn>
+                        <sku>SKUMULTI102</sku>
+                        <quantity>8</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                  </Document>
+              shipmentWithMultipleOrdersOrderLevelStrategies:
+                summary: Shipment with multiple orders using order level strategies
+                description: >
+                  Processes multiple orders on the same shipment. Each order
+                  provides its own `orderItemUpdateStrategy`, so no top level
+                  strategy is needed.
+                value: |
+                  <Document>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <direction>OUTBOUND</direction>
+                    <shipmentNumber>TEST-EXAMPLE-SHIPMENT-001</shipmentNumber>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-001</orderNumber>
+                      <orderItemUpdateStrategy>APPEND</orderItemUpdateStrategy>
+                      <items>
+                        <lpn>LPNMULTI201</lpn>
+                        <sku>SKUMULTI201</sku>
+                        <quantity>4</quantity>
+                        <quantityUnit>CASE</quantityUnit>
+                      </items>
+                    </orders>
+                    <orders>
+                      <orderNumber>TEST-EXAMPLE-ORDER-002</orderNumber>
+                      <orderItemUpdateStrategy>DELETE</orderItemUpdateStrategy>
+                      <items>
+                        <lpn>LPNMULTI202</lpn>
+                        <sku>SKUMULTI202</sku>
+                      </items>
+                    </orders>
+                  </Document>
+      responses:
+        '200':
+          description: Document processed; entities updated, nothing newly created.
+          headers:
+            Correlation-Id:
+              description: Same correlation id supplied by the client, when present.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResult'
+        '201':
+          description: Document processed; one or more entities created.
+          headers:
+            Location:
+              description: Canonical URL of the resulting document.
+              schema:
+                type: string
+                format: uri
+            Correlation-Id:
+              description: Same correlation id supplied by the client, when present.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResult'
+        '400':
+          description: Malformed JSON or XML request body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Token lacks permission for the given business/facility.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: business or facility not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: >
+            Conflict. The document cannot be applied because it would create duplicate
+            or ambiguous data, such as an `APPEND` request containing an item whose
+            `lpn` + `sku` already exists on the matched order, duplicate `lpn` + `sku`
+            pairs in the incoming items, or a shipmentNumber conflict. Use `MERGE` to
+            update existing items, or `OVERWRITE` to replace the full item list.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Unsupported media type; use application/json, application/xml, or text/xml.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: >
+            Semantically invalid document, such as a bad enum value, invalid
+            item shape for the chosen `orderItemUpdateStrategy`, or a new order
+            missing business / facility / direction.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /sku_master:
+    post:
+      operationId: upsertSkuMaster
+      summary: Create or update SKU master records
+      description: >
+        Creates or updates SKU master records for a facility. The request body
+        is list-only: even a single SKU must be sent inside the `skus` array.
+        Each SKU is upserted by `sku_id` within the provided `business` and
+        `facility`.
+        For existing SKUs, only fields provided in the request are updated;
+        omitted fields are left unchanged.
+      tags: [SKU Master]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsert:
+                summary: Upsert multiple SKUs
+                value:
+                  business: kargo
+                  facility: sf
+                  skus:
+                    - sku_id: TEST-SKU-001
+                      description: Test SKU 001
+                      unit_of_measure: CASE
+                      unit_of_weight: LB
+                      alternate_sku_ids:
+                        - ALT-001
+                        - UPC-001
+                      cases_per_pallet: 55
+                      cases_per_layer: 7
+                      layers_per_pallet: 10
+                      sku_metadata:
+                        source: local-test
+                        category: snack
+                    - sku_id: TEST-SKU-002
+                      description: Test SKU 002
+                      unit_of_measure: EACH
+                      cases_per_pallet: 43
+                      cases_per_layer: 6
+                      layers_per_pallet: 8
+                      sku_metadata:
+                        source: local-test
+              partialUpdate:
+                summary: Update only provided fields
+                description: >
+                  This updates only the description. Other existing SKU fields
+                  are left unchanged.
+                value:
+                  business: kargo
+                  facility: sf
+                  skus:
+                    - sku_id: TEST-SKU-001
+                      description: Updated SKU description
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsertXml:
+                summary: Upsert multiple SKUs with XML
+                value: |
+                  <SkuMasterUpsertRequest>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <skus>
+                      <sku_id>TEST-SKU-001</sku_id>
+                      <description>Test SKU 001</description>
+                      <unit_of_measure>CASE</unit_of_measure>
+                      <unit_of_weight>LB</unit_of_weight>
+                      <alternate_sku_ids>ALT-001</alternate_sku_ids>
+                      <alternate_sku_ids>UPC-001</alternate_sku_ids>
+                      <cases_per_pallet>55</cases_per_pallet>
+                      <cases_per_layer>7</cases_per_layer>
+                      <layers_per_pallet>10</layers_per_pallet>
+                      <sku_metadata>
+                        <source>local-test</source>
+                        <category>snack</category>
+                      </sku_metadata>
+                    </skus>
+                    <skus>
+                      <sku_id>TEST-SKU-002</sku_id>
+                      <description>Test SKU 002</description>
+                      <unit_of_measure>EACH</unit_of_measure>
+                      <cases_per_pallet>43</cases_per_pallet>
+                      <cases_per_layer>6</cases_per_layer>
+                      <layers_per_pallet>8</layers_per_pallet>
+                      <sku_metadata>
+                        <source>local-test</source>
+                      </sku_metadata>
+                    </skus>
+                  </SkuMasterUpsertRequest>
+          text/xml:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsertXml:
+                summary: Upsert multiple SKUs with XML
+                value: |
+                  <SkuMasterUpsertRequest>
+                    <business>kargo</business>
+                    <facility>sf</facility>
+                    <skus>
+                      <sku_id>TEST-SKU-001</sku_id>
+                      <description>Test SKU 001</description>
+                      <unit_of_measure>CASE</unit_of_measure>
+                      <unit_of_weight>LB</unit_of_weight>
+                      <alternate_sku_ids>ALT-001</alternate_sku_ids>
+                      <alternate_sku_ids>UPC-001</alternate_sku_ids>
+                      <cases_per_pallet>55</cases_per_pallet>
+                      <cases_per_layer>7</cases_per_layer>
+                      <layers_per_pallet>10</layers_per_pallet>
+                      <sku_metadata>
+                        <source>local-test</source>
+                        <category>snack</category>
+                      </sku_metadata>
+                    </skus>
+                  </SkuMasterUpsertRequest>
+    
+      responses:
+        '200':
+          description: SKU master records were created or updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuMasterUpsertResult'
+        '400':
+          description: Malformed JSON or XML request body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Token lacks permission for the given business/facility.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Facility not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Unsupported media type; use application/json, application/xml, or text/xml.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: >
+            Semantically invalid request, such as missing `business` or
+            `facility`, missing `sku_id`, duplicate `sku_id` values in the same
+            request, invalid pagination value, or wrong field type.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    get:
+      operationId: getSkuMaster
+      summary: Retrieve SKU master records
+      description: >
+        Returns SKU master records for a facility. If `sku_id` is provided, the
+        response is filtered to that SKU. If `limit` is provided, pagination is
+        enabled and `offset` defaults to 0. When another page is available,
+        `next_offset` contains the offset to use for the next request.
+
+        Example request for all SKUs in a facility:
+
+        `GET /v1/sku_master?business=kargo&facility=sf`
+
+        Example request for one SKU:
+
+        `GET /v1/sku_master?business=kargo&facility=sf&sku_id=TEST-SKU-001`
+
+        Example paginated request:
+
+        `GET /v1/sku_master?business=kargo&facility=sf&limit=100&offset=0`
+      tags: [SKU Master]
+      parameters:
+        - name: business
+          in: query
+          required: true
+          description: Business slug that scopes the facility, same as `/v1/documents`.
+          schema:
+            type: string
+          example: kargo
+        - name: facility
+          in: query
+          required: true
+          description: Facility slug that scopes the SKU master records, same as `/v1/documents`.
+          schema:
+            type: string
+          example: sf
+        - name: sku_id
+          in: query
+          required: false
+          description: Optional SKU id filter. If omitted, all SKUs for the facility are returned.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: >
+            Optional page size. When provided, pagination is enabled. The API
+            caps this value at 100.
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          required: false
+          description: >
+            Number of records to skip when pagination is enabled. Defaults to 0
+            when `limit` is provided.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: SKU master records for the requested facility.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuMasterListResult'
+              examples:
+                fullList:
+                  summary: Full SKU master response
+                  value:
+                    skus:
+                      - business: kargo
+                        facility: sf
+                        sku_id: TEST-SKU-001
+                        description: Test SKU 001
+                        unit_of_measure: CASE
+                        unit_of_weight: LB
+                        alternate_sku_ids:
+                          - ALT-001
+                          - UPC-001
+                        cases_per_pallet: 55
+                        cases_per_layer: 7
+                        layers_per_pallet: 10
+                        sku_metadata:
+                          source: local-test
+                          category: snack
+                        created_at: "2026-06-05T12:00:00.000Z"
+                        updated_at: "2026-06-05T12:30:00.000Z"
+                      - business: kargo
+                        facility: sf
+                        sku_id: TEST-SKU-002
+                        description: Test SKU 002
+                        unit_of_measure: EACH
+                        unit_of_weight: null
+                        alternate_sku_ids: null
+                        cases_per_pallet: 43
+                        cases_per_layer: 6
+                        layers_per_pallet: 8
+                        sku_metadata:
+                          source: local-test
+                        created_at: "2026-06-05T12:05:00.000Z"
+                        updated_at: "2026-06-05T12:35:00.000Z"
+                    total: 2
+                    limit: null
+                    offset: null
+                    next_offset: null
+                paginated:
+                  summary: Paginated SKU master response
+                  value:
+                    skus:
+                      - business: kargo
+                        facility: sf
+                        sku_id: TEST-SKU-001
+                        description: Test SKU 001
+                        unit_of_measure: CASE
+                        unit_of_weight: LB
+                        alternate_sku_ids:
+                          - ALT-001
+                        cases_per_pallet: 55
+                        cases_per_layer: 7
+                        layers_per_pallet: 10
+                        sku_metadata:
+                          source: local-test
+                        created_at: "2026-06-05T12:00:00.000Z"
+                        updated_at: "2026-06-05T12:30:00.000Z"
+                    total: 25
+                    limit: 1
+                    offset: 0
+                    next_offset: 1
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Token lacks permission for the given business/facility.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Facility not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Invalid query parameter, such as missing `business` or `facility`, or invalid `limit` / `offset`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    SkuMasterUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [business, facility, skus]
+      properties:
+        business:
+          type: string
+          description: Business slug that scopes the facility, same as `/v1/documents`.
+        facility:
+          type: string
+          description: Facility slug that scopes the SKU master upsert, same as `/v1/documents`.
+        skus:
+          type: array
+          description: >
+            List of SKU master records to create or update. This field is
+            list-only; send a one-item array to update a single SKU.
+          items:
+            $ref: '#/components/schemas/SkuMasterInput'
+    SkuMasterInput:
+      type: object
+      additionalProperties: false
+      required: [sku_id]
+      description: >
+        Editable SKU master fields. `sku_id` is required and is used as the
+        upsert key within the provided facility. All other fields are optional;
+        when updating an existing SKU, omitted fields are left unchanged.
+      properties:
+        sku_id:
+          type: string
+          description: Unique SKU identifier within the facility.
+        description:
+          type: [string, 'null']
+          description: Human-readable description of the SKU.
+        unit_of_measure:
+          type: [string, 'null']
+          description: Unit used to measure SKU quantity, such as CASE, EACH, or PALLET.
+        unit_of_weight:
+          type: [string, 'null']
+          description: Unit used to measure SKU weight, such as LB or KG.
+        alternate_sku_ids:
+          type: [array, 'null']
+          description: Alternate SKU identifiers or barcodes associated with this SKU.
+          items:
+            type: string
+        cases_per_pallet:
+          type: [integer, 'null']
+          description: Number of cases that fit on one pallet for this SKU.
+        cases_per_layer:
+          type: [integer, 'null']
+          description: Number of cases in one pallet layer for this SKU.
+        layers_per_pallet:
+          type: [integer, 'null']
+          description: Number of layers per pallet for this SKU.
+        sku_metadata:
+          description: Additional SKU metadata stored as JSON.
+    SkuMaster:
+      type: object
+      description: SKU master record from the `sku_master` database table.
+      properties:
+        business:
+          type: string
+          description: Business slug associated with the SKU master record.
+        facility:
+          type: string
+          description: Facility slug associated with the SKU master record.
+        sku_id:
+          type: string
+          description: Unique SKU identifier within the facility.
+        description:
+          type: [string, 'null']
+          description: Human-readable description of the SKU.
+        unit_of_measure:
+          type: [string, 'null']
+          description: Unit used to measure SKU quantity, such as CASE, EACH, or PALLET.
+        unit_of_weight:
+          type: [string, 'null']
+          description: Unit used to measure SKU weight, such as LB or KG.
+        alternate_sku_ids:
+          type: [array, 'null']
+          description: Alternate SKU identifiers or barcodes associated with this SKU.
+          items:
+            type: string
+        cases_per_pallet:
+          type: [integer, 'null']
+          description: Number of cases that fit on one pallet for this SKU.
+        cases_per_layer:
+          type: [integer, 'null']
+          description: Number of cases in one pallet layer for this SKU.
+        layers_per_pallet:
+          type: [integer, 'null']
+          description: Number of layers per pallet for this SKU.
+        sku_metadata:
+          description: Additional SKU metadata stored as JSON.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the SKU master record was created.
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+          description: Timestamp when the SKU master record was last updated.
+    SkuMasterUpsertResult:
+      type: object
+      required: [numRecordsAdded, numRecordsUpdated, skus]
+      properties:
+        numRecordsAdded:
+          type: integer
+          description: Number of SKU master records created by the request.
+        numRecordsUpdated:
+          type: integer
+          description: Number of existing SKU master records updated by the request.
+        skus:
+          type: array
+          description: SKU master records after the upsert operation.
+          items:
+            $ref: '#/components/schemas/SkuMaster'
+    SkuMasterListResult:
+      type: object
+      required: [skus, total, limit, offset, next_offset]
+      properties:
+        skus:
+          type: array
+          description: SKU master records matching the request.
+          items:
+            $ref: '#/components/schemas/SkuMaster'
+        total:
+          type: integer
+          description: Total number of SKU master records matching the filter before pagination.
+        limit:
+          type: [integer, 'null']
+          description: Page size used for this request. Null when pagination is not enabled.
+        offset:
+          type: [integer, 'null']
+          description: Offset used for this request. Null when pagination is not enabled.
+        next_offset:
+          type: [integer, 'null']
+          description: Offset to use for the next page. Null when there is no next page or pagination is not enabled.
+    Document:
+      type: object
+      additionalProperties: false
+      required: [business, facility, direction]
+      oneOf:
+        - required: [orderNumber]
+          not:
+            required: [orders]
+        - required: [orders, shipmentNumber]
+          not:
+            required: [orderNumber]
+      description: >
+        Flattened shipment + order + order-item document. This schema supports two formats:
+        the existing single order format with top level `orderNumber`, and a
+        shipment level multi order format with `orders`.
+        In single order mode, `orderNumber` is required at the top level. In
+        multi order mode, `shipmentNumber` and `orders` are required and each 
+        order entry must include `orderNumber`.
+
+        `business`, `facility`, and `direction` are required. 
+        Item field requirements depend on `orderItemUpdateStrategy`: `APPEND` and `OVERWRITE`
+        require each item to include `lpn`, `sku`, `quantity`, and `quantityUnit`;
+        `MERGE` and `DELETE` require each item to include `lpn` and `sku`. If
+        `orderItemUpdateStrategy` is omitted and `items` are provided, Kargo treats
+        the request as `OVERWRITE`.
+      properties:
+        orderNumber:
+          type: string
+          description: >
+            Single order mode upsert key. If an order with this number exists,
+            the document is applied to the most recently created matching order;
+            otherwise a new order and shipment are created. Do not include this
+            field when using `orders`.
+        business:
+          type: string
+          description: Short name / slug of the business, e.g. "kargo".
+        facility:
+          type: string
+          description: Short name / slug of the facility, e.g. "sf".
+        direction:
+          $ref: '#/components/schemas/OrderDirection'
+          description: Canonical direction of the order.
+        shipmentNumber:
+          type: string
+          description: >
+            Facility provided unique shipment identifier. 
+        expectedArrivalAt:
+          type: string
+          format: date-time
+        trailerNumber:
+          type: string
+        dockSlug:
+          type: string
+          description: Short name of the dock, e.g. "D11".
+        driverName:
+          type: string
+        driverLicenseNumber:
+          type: string
+        driverLicensePlate:
+          type: string
+        additionalFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentAdditionalField'
+        orderType:
+          type: string
+        purchaseOrder:
+          type: string
+        consigneeName:
+          type: string
+        consigneePhoneNumber:
+          type: string
+        bolNumber:
+          type: string
+        expectedQuantity:
+          type: integer
+        carrier:
+          type: string
+        sealNumber:
+          type: string
+        supplier:
+          type: string
+        client:
+          type: string
+        destination:
+          type: string
+        orderItemUpdateStrategy:
+          allOf:
+            - $ref: '#/components/schemas/OrderItemUpdateStrategy'
+          default: OVERWRITE
+          description: >
+            Shipment level default item update strategy. In multi order mode,
+            this value applies to each order unless that order provides its own
+            `orderItemUpdateStrategy`.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+        orders:
+          type: array
+          minItems: 1
+          description: >
+            Multi order mode list. Each entry is processed as one order on the
+            same shipment. Do not include top level `orderNumber` when using this
+            field.
+          items:
+            $ref: '#/components/schemas/BatchOrderInput'
+      allOf:
+        # No strategy + items means the default strategy is OVERWRITE, so each
+        # incoming item must include the full item fields needed to recreate it.
+        - if:
+            required: [items]
+            not:
+              required: [orderItemUpdateStrategy]
+          then:
+            properties:
+              items:
+                items:
+                  required: [lpn, sku, quantity, quantityUnit]
+        # APPEND and OVERWRITE both create incoming items, so each item must
+        # include the fields required to persist a complete order item.
+        - if:
+            required: [orderItemUpdateStrategy]
+            properties:
+              orderItemUpdateStrategy:
+                enum: [APPEND, OVERWRITE]
+          then:
+            properties:
+              items:
+                items:
+                  required: [lpn, sku, quantity, quantityUnit]
+        # MERGE and DELETE identify existing order items by LPN + SKU. Quantity
+        # fields are optional because they are not needed to identify the item.
+        - if:
+            required: [orderItemUpdateStrategy]
+            properties:
+              orderItemUpdateStrategy:
+                enum: [MERGE, DELETE]
+          then:
+            properties:
+              items:
+                items:
+                  required: [lpn, sku]
+    BatchOrderInput:
+      type: object
+      additionalProperties: false
+      required: [orderNumber]
+      description: >
+        One order inside a shipment level multi order document. `orderNumber`
+        identifies the order. Each order can provide its own
+        `orderItemUpdateStrategy`, so different orders in the same shipment can
+        use different strategies. If `orderItemUpdateStrategy` is omitted for
+        this order, the top level `orderItemUpdateStrategy` is used. If neither
+        value is provided, Kargo treats the order item update strategy as
+        `OVERWRITE`.
+      properties:
+        orderNumber:
+          type: string
+          description: >
+            Upsert key for this order. This is the Kargo order identifier.
+        orderType:
+          type: string
+        purchaseOrder:
+          type: string
+        consigneeName:
+          type: string
+        consigneePhoneNumber:
+          type: string
+        bolNumber:
+          type: string
+        expectedQuantity:
+          type: integer
+        sealNumber:
+          type: string
+        supplier:
+          type: string
+        client:
+          type: string
+        destination:
+          type: string
+        orderItemUpdateStrategy:
+          allOf:
+            - $ref: '#/components/schemas/OrderItemUpdateStrategy'
+          description: >
+            Optional order level item update strategy. When provided, this
+            overrides the top level `orderItemUpdateStrategy` for this order.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+      allOf:
+        - if:
+            required: [orderItemUpdateStrategy]
+            properties:
+              orderItemUpdateStrategy:
+                enum: [APPEND, OVERWRITE]
+          then:
+            properties:
+              items:
+                items:
+                  required: [lpn, sku, quantity, quantityUnit]
+        - if:
+            required: [orderItemUpdateStrategy]
+            properties:
+              orderItemUpdateStrategy:
+                enum: [MERGE, DELETE]
+          then:
+            properties:
+              items:
+                items:
+                  required: [lpn, sku]
+    OrderItemInput:
+      type: object
+      additionalProperties: false
+      properties:
+        identifier:
+          type: string
+          description: >
+            Customer supplied identifier for the item. Optional. This field is not used
+            to match items for `MERGE` or `DELETE`; item matching uses `lpn` + `sku`.
+        lpn:
+          type: string
+          description: License plate number. Used together with `sku` as the item key for MERGE and DELETE.
+        sku:
+          type: string
+          description: SKU. Used together with `lpn` as the item key for MERGE and DELETE.
+        quantity:
+          type: integer
+        quantityUnit:
+          type: string
+          description: ShipperUnitType enum.
+        purchaseOrder:
+          type: string
+        description:
+          type: string
+        upc:
+          type: string
+        weightPerUnit:
+          type: number
+        weightUnit:
+          type: string
+          description: WeightUnit enum.
+        height:
+          type: number
+        length:
+          type: number
+        dimensionUnit:
+          type: string
+          description: DimensionUnit enum.
+        isDangerousGood:
+          type: boolean
+        lot:
+          type: string
+        expirationDate:
+          type: string
+          format: date
+        manufacturingDate:
+          type: string
+          format: date
+        caseSerials:
+          type: array
+          description: >
+            Case-level serials for this order item. Clients provide only `id`
+            and `quantity`; Kargo stores these as order_item.sub_units with
+            unit_type set to "case".
+          items:
+            $ref: '#/components/schemas/CaseSerial'
+    CaseSerial:
+      type: object
+      additionalProperties: false
+      required: [id, quantity]
+      properties:
+        id:
+          type: string
+          description: Case serial identifier.
+        quantity:
+          type: integer
+          description: Quantity represented by this case serial.
+    ShipmentAdditionalField:
+      type: object
+      additionalProperties: false
+      required: [name, value]
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    DocumentResult:
+      type: object
+      required: [created, updated, removed]
+      properties:
+        shipment:
+          $ref: '#/components/schemas/Shipment'
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityRef'
+        updated:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityRef'
+        removed:
+          type: array
+          description: >
+            Entities removed by reconciliation, e.g. order items dropped when
+            orderItemUpdateStrategy is `OVERWRITE`.
+          items:
+            $ref: '#/components/schemas/EntityRef'
+    EntityRef:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          type: string
+          enum: [SHIPMENT, ORDER, ORDER_ITEM]
+        id:
+          type: string
+          description: >
+            Kargo identifier of the affected entity: shipment id, order
+            externalId, or order item id.
+        reference:
+          type: string
+          description: >
+            Human-facing key where one exists, such as `shipmentNumber` for a shipment,
+            `orderNumber` for an order, or `lpn` + `sku` information for an order item.
+    Shipment:
+      type: object
+      description: The resulting shipment after the document is processed.
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        expectedArrivalAt:
+          type: string
+          format: date-time
+        carrier:
+          type: string
+        purchaseOrder:
+          type: string
+        facility:
+          type: object
+          properties:
+            slug:
+              type: string
+            name:
+              type: string
+        statusEvents:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              displayName:
+                type: string
+              completed:
+                type: boolean
+              completedAt:
+                type: string
+                format: date-time
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    Order:
+      type: object
+      properties:
+        externalId:
+          type: string
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum: [CREATED, SCHEDULED, COMPLETED]
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/OrderItemInput'
+              - type: object
+                properties:
+                  id:
+                    type: string
+    Problem:
+      type: object
+      description: RFC 9457 problem detail.
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              detail:
+                type: string
+    OrderDirection:
+      type: string
+      enum: [OUTBOUND, INBOUND]
+    OrderItemUpdateStrategy:
+      type: string
+      description: |
+        How the incoming `items` reconcile with items already on the matched order:
+        If omitted and `items` are provided, defaults to `OVERWRITE`. If no
+        `items` are provided, existing order items are unchanged.
+
+          - `APPEND`    — add incoming items to the order and keep existing items. Each incoming item requires `lpn`, `sku`, `quantity`, and `quantityUnit`. Duplicate `lpn` + `sku` pairs are rejected with `409 Conflict`; use `MERGE` to update existing items or `OVERWRITE` to replace the full item list.
+          - `OVERWRITE` — replace all existing order items with the incoming items. If multiple orders have the same order number, the most recently created order is updated. Each incoming item requires `lpn`, `sku`, `quantity`, and `quantityUnit`.
+          - `MERGE`     — update existing items matched by `lpn` + `sku`; non-matching incoming items are added. Each incoming item requires `lpn` and `sku`.
+          - `DELETE`    — remove existing order items matched by `lpn` + `sku`. Each incoming item requires `lpn` and `sku`.
+      enum: [APPEND, OVERWRITE, MERGE, DELETE]

@@ -1,0 +1,20 @@
+generated: '2026-08-23'
+method: searched
+source: https://www.kargo.ai/
+plan_count: 0
+plans: []
+note: 'Kargo publishes no pricing page and no plans. https://www.kargo.ai/pricing
+  returns 404 and no pricing link appears in the site navigation or footer. The only
+  commercial entry points are "Get a demo" and "Request a Tour", both of which lead to
+  a lead-capture form at info.mykargo.com. This is a hardware-plus-software deployment
+  (camera towers and forklift cameras installed in a customer facility) sold
+  enterprise-direct, and API credentials are not self-service: Kargo''s own
+  authentication docs state the API Client ID and Client Secret are "created and
+  provided to customer" by Kargo.'
+evidence:
+- url: https://www.kargo.ai/pricing
+  status: 404
+- url: https://info.mykargo.com/demo
+  status: 200
+- url: https://docs.kargo.ai/authentication
+  status: 200

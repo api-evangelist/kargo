@@ -1,0 +1,74 @@
+generated: '2026-08-23'
+method: searched
+source: 'registry.npmjs.org, pypi.org, rubygems.org, crates.io, github.com/mykargo,
+  https://docs.kargo.ai/'
+package_count: 0
+official_sdk_count: 0
+packages: []
+note: 'Kargo publishes NO first-party client libraries in any package registry. Its own
+  documentation offers no SDK section and its integration examples are raw curl and raw
+  Python HTTP requests, with the explicit statement that "an integration can be built in
+  any language or framework that can make HTTP requests and receive webhooks". Kargo''s
+  GitHub organization (github.com/mykargo) holds three public repositories — speed-check
+  (HTML), docs (an unmodified Mintlify starter template) and jetson_memtest (C++) — and
+  none is a client library. What Kargo does distribute instead is the "Kargo agent", a
+  binary that runs inside the customer network; it is fetched through the GraphQL
+  kargoAgent query, which returns a single-use token redeemed at
+  api.kargo.zone/download_agent_with_token, valid for 5 minutes. That is a gated,
+  non-registry distribution with no version metadata a consumer can read.'
+rejected_candidates:
+- name: kargo
+  registry: npm
+  version: 0.4.5
+  published: '2015-06-06'
+  reason: 'Unrelated — "a flux payload object" by sterpe. Not Kargo Technologies.'
+- name: kargo
+  registry: pypi
+  reason: 'Unrelated — a Kubernetes cluster deployment tool by Smaine Kahlouch.'
+- name: '@kargotech/eslint-config-base'
+  registry: npm
+  version: 0.4.1
+  published: '2022-01-22'
+  reason: 'DIFFERENT COMPANY — kargo.tech, the Indonesian trucking/logistics platform
+    (Kargo Technologies PT), not kargo.ai.'
+- name: kargo (openapi.json in github.com/mykargo/docs)
+  registry: github
+  reason: 'Real Kargo org, but the file is the unmodified Mintlify sample spec
+    ("OpenAPI Plant Store", servers http://sandbox.mintlify.com, paths /plants).
+    Rejected on ownership: it describes nothing Kargo ships.'
+distribution:
+- name: Kargo agent
+  kind: binary
+  registry: none
+  version: null
+  published: null
+  acquisition: 'GraphQL query kargoAgent returns a single-use download token; redeem at
+    https://api.kargo.zone/download_agent_with_token?token=<token> within 5 minutes.'
+  official: true
+  note: 'Runs inside the customer network and connects their systems to the Kargo API.
+    version is null because Kargo publishes no version or release date for it anywhere
+    public — the download is authenticated and token-gated, so a consumer cannot tell
+    what build they are getting either.'
+  source: https://docs.kargo.ai/graphql/api/queries/kargo-agent
+- name: Kargo AS2 public certificate
+  kind: certificate
+  registry: cdn
+  version: null
+  published: null
+  url: https://docs.kargo.ai/flat_file
+  official: true
+  sha256_fingerprint: B2:DE:59:53:CC:6D:9D:38:92:12:8A:40:1B:90:5B:B7:DF:96:FD:B4:1A:61:F0:12:7D:3A:4F:6B:FE:DB:1F:9B
+  note: 'Downloadable from the flat-file integration page for AS2 trading-partner
+    setup. Unpinned URL; Kargo publishes the SHA-256 fingerprint instead of a version,
+    and instructs callers to verify it before configuring.'
+collections:
+- name: Kargo Public GraphQL API
+  kind: postman
+  url: https://docs.kargo.ai/kargo-public-graphql.postman_collection.json
+  file: postman/kargo-public-graphql.postman_collection.json
+  schema: https://schema.getpostman.com/json/collection/v2.1.0/collection.json
+  official: true
+  version: null
+  published: null
+  note: 'Kargo publishes a public Postman collection for the GraphQL API. No version
+    or dated release is attached to it, so version and published are null.'

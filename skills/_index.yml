@@ -1,0 +1,24 @@
+generated: '2026-08-23'
+method: generated
+source: openapi/kargo-document-intake-openapi.yml
+note: 'Kargo publishes no AGENTS.md, no skills directory and no agent-facing operating
+  guide. These skills are authored by API Evangelist and grounded in operationIds and
+  field names verified against Kargo''s own published OpenAPI and GraphQL schema.'
+skills:
+- file: kargo-schedule-shipment-and-validate.md
+  name: Schedule a Kargo shipment and validate it against what the dock sees
+  api: openapi/kargo-document-intake-openapi.yml
+  operations:
+  - createDocument
+  graphql_operations:
+  - createShipmentAndOrder
+  - pushMessages
+- file: kargo-maintain-sku-master.md
+  name: Maintain the Kargo SKU master
+  api: openapi/kargo-document-intake-openapi.yml
+  operations:
+  - upsertSkuMaster
+  - getSkuMaster
+  graphql_operations:
+  - upsertSKUs
+  - deleteSKUs

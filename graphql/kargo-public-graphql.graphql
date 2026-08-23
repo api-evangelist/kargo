@@ -1,0 +1,887 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+input AddItemsToOrderInput {
+  id: ID!
+  items: [OrderItemInput!]!
+}
+
+type AddItemsToOrderResult {
+  success: Boolean!
+}
+
+"""Street address type intended to be assciated with a Facility."""
+type Address {
+  """Address first line."""
+  addressOne: String!
+  """Address second line."""
+  addressTwo: String
+  """City."""
+  city: String!
+  """2-letter state code. Do not include for international addresses."""
+  state: String!
+  """5-digit ZIP code. Do not include for international addresses."""
+  zip: String!
+}
+
+input AddressInput {
+  addressOne: String!
+  addressTwo: String
+  city: String!
+  state: String!
+  zip: String!
+}
+
+type AggregateLabel {
+  """Identifiers found for the labels"""
+  identifiers: [String!]!
+  """Images of the label(s) found"""
+  images: [PalletImage!]!
+}
+
+"""Business objects represent unique Kargo customers. They are generated during configuration with a new customer."""
+type Business {
+  """Short name for this business (ex. 'kargo')."""
+  slug: String!
+  """Display name (ex. 'Kargo') for this business."""
+  name: String
+  """List of Facility objects associated with this business. Business objects have a 1:Many relationship with Facility objects."""
+  facilities: [Facility!]!
+}
+
+input CaseSubUnitInput {
+  id: String!
+  quantity: Int!
+  unit_type: ShipperUnitType!
+}
+
+"""X, Y coordinates to represent a location on an image in pixels"""
+type Coordinate {
+  x: Float!
+  y: Float!
+}
+
+input CreateExceptionInput {
+  """Kargo Shipment ID for the exception, this must always be populated. If this is provided without the
+pallet ID then the customer exception will be at the shipment level."""
+  shipmentId: Int!
+  """Kargo Pallet ID for the exception, if present this will be a pallet level exception"""
+  palletId: Int
+  """Exception priority, will override if provided otherwise will use default for the chosen exception type"""
+  priority: ExceptionPriority
+  """Description of the customer exception"""
+  customerExceptionDescription: String!
+}
+
+type CreateExceptionResult {
+  """ID for the exception, can be accessed at https://mykargo.com/exceptions/{exceptionId}"""
+  exceptionId: ID!
+}
+
+type CreateOrUpdateOrderResult {
+  success: Boolean!
+  id: ID!
+  """type field will return whether this mutation operation is a CREATE or UPDATE"""
+  type: String!
+}
+
+type CreateOrderResult {
+  success: Boolean!
+  id: ID!
+}
+
+input CreateShipmentAndOrderInput {
+  shipment: UpdateShipmentInput!
+  orders: [PostShipmentCreateOrderInput!]!
+}
+
+type CreateShipmentAndOrderResult {
+  shipment: Shipment!
+}
+
+input DeleteItemsFromOrderInput {
+  """ID for the order to remove order items from"""
+  id: ID!
+  """A list of the identifiers for the order items to be removed"""
+  identifiers: [String!]!
+}
+
+type DeleteItemsFromOrderResult {
+  success: Boolean!
+  deletedIdentifiers: [String!]!
+  orderDeleted: Boolean!
+}
+
+"""Input for deleting SKUs."""
+input DeleteSKUInput {
+  business_slug: String!
+  facility_slug: String!
+  SKUIDs: [String!]!
+}
+
+"""Deleted SKU count"""
+type DeleteSKUResult {
+  numRecordsDeleted: Int!
+}
+
+enum DimensionUnit {
+  INCH
+}
+
+"""Dock objects represent unique doors that have one or more Kargo towers installed. They are generated during configuration with a new door at a given Facility."""
+type Dock {
+  """Kargo-ID of Facility object that this door belongs to."""
+  facilityId: Int!
+  """Kargo-ID of Business object that this door belongs to."""
+  businessId: Int!
+  """Human-interpretable shortname for this door (ex. 'ND15'). This is generated on configuration with a new door at a given Facility."""
+  slug: String!
+  """Human-interpretable name for this door (ex. 'North Dock 15'). This is generated on configuration with a new door at a given Facility."""
+  displayName: String!
+  """Shipment object currently at this Dock."""
+  currentShipment: Shipment
+}
+
+enum EquipmentType {
+  """Represents land-based transport"""
+  TRAILER
+  """Represents sea-based transport"""
+  CONTAINER
+  """Represents air-based transport"""
+  AIR
+  BOX_TRUCK
+}
+
+enum ExceptionPriority {
+  LOW
+  HIGH
+}
+
+"""Facility objects represent unique facilities that have Kargo towers installed. They are generated during configuration with a new facility."""
+type Facility {
+  """Short name for this facility (ex. 'sf')"""
+  slug: String!
+  """Display name (ex. 'San Francisco') for Facility object."""
+  name: String
+  """Street address for the associated Facility."""
+  address: Address
+  """List of shipments that were tracked through towers at this Facility."""
+  shipments(filter: ShipmentFilter): [Shipment!]! @deprecated
+  """Single Shipment object requested by Shipment Kargo-ID."""
+  shipment(id: Int!): Shipment!
+  """List of SKUs associated with this facility"""
+  SKUs: [SKU!]!
+  """Fetch a SKU by its ID"""
+  SKU(id: String!): SKU
+  """List of Docks associated with this Facility."""
+  docks: [Dock!]!
+  """List of Order objects for this Facility matching a specific filter (date range, direction)."""
+  orders(filter: OrdersFilter!): [Order!]!
+}
+
+"""Each ShippingItem is automatically assigned an ItemLoadingDirection. ItemLoadingDirection is assigned as the ShippingItem passed through the towers."""
+enum ItemLoadingDirection {
+  """ShippingItem is being moved from the facility into the trailer."""
+  LOADING
+  """ShippingItem is being moved from the trailer into the facility."""
+  UNLOADING
+}
+
+"""The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf)."""
+scalar JSON
+
+type KargoAgentDownloadToken {
+  """Version of the agent, if it exceeds your current version you should update"""
+  version: Int!
+  """Token to be passed into the /download_agent_with_token?token=<> route"""
+  token: String!
+}
+
+"""All information about a label for one pallet"""
+type Label {
+  palletId: Int!
+  fields: [LabelField!]!
+  licensePlateNumbers: [LabelField!]!
+  palletContentIds: [LabelField!]!
+  userUploadedImages: [UploadedImage!]!
+  forkliftImages: [PalletImage!]!
+  unclassifiedImages: [PalletImage!]!
+}
+
+"""One field from a label"""
+type LabelField {
+  id: ID!
+  displayName: String!
+  managedFieldName: String!
+  managedFieldFormatRegExp: String
+  value: String!
+  requiresAnnotationReason: Boolean
+  imageIds: [Int!]!
+  images: [PalletImage!]!
+}
+
+type Mutation {
+  """This is an authenticated mutation used to create a new shipment, along with its order and order items"""
+  createShipmentAndOrder(input: CreateShipmentAndOrderInput!): CreateShipmentAndOrderResult!
+  """This is an authenticated mutation used to update shipment statuses from an external scheduling system."""
+  updateShipment(input: UpdateShipmentInput!): UpdateShipmentResult!
+  createOrder(input: OrderInput!): CreateOrderResult!
+  """This mutation is used to create or update an order. We ues orderNumber to determine if the order already exists.
+If the order already exists, it will be updated with the new information. If it does not exist, it will be created."""
+  createOrUpdateOrder(input: OrderInput!): CreateOrUpdateOrderResult!
+  addItemsToOrder(input: AddItemsToOrderInput!): AddItemsToOrderResult!
+  """Deletes order items by their identifier value"""
+  deleteItemsFromOrder(input: DeleteItemsFromOrderInput!): DeleteItemsFromOrderResult!
+  """Create or update SKUS(s) for a given facility"""
+  upsertSKUs(input: UpsertSKUInput!): UpsertSKUResult!
+  """Deletes SKU(s) for a given facility"""
+  deleteSKUs(input: DeleteSKUInput!): DeleteSKUResult!
+  """The parseImage mutation allows you to use Kargo templates to parse your own images.
+It's as simple as issuing a curl command:
+```sh
+curl https://api.kargo.zone/public_graphql \
+  -F operations='{
+      "query": "mutation ($file: Upload!) {parseImage(input:{businessSlug:\"<business_slug>\",facilitySlug:\"<facility_slug>\",file:$file,metadata:[{key:\"<id1name>\",value:\"<id1>\"}]}){readResults{name value confidence}}}",
+      "variables": {
+        "file": null
+      }
+    }' \
+  -F map='{
+      "0": ["variables.file"]
+    }' \
+  -F 0=@image_path.jpg \
+  --header "authorization: Bearer ABCD_ACCESS_TOKEN_ABCD"
+```
+Where image_path.jpg is pointing to your image.
+Or using a GraphQL client in your language of choice. You can also use the GraphQL Sandbox explained in the
+authentication docs.
+It returns results which will be empty until the Kargo operations team has had the change
+to set up your template.
+```json
+{
+  "data": {
+    "parseImage": {
+      "readResults": []
+    }
+  }
+}
+```
+But then the results will return with the values and confidences of each of the fields your label contains
+```json
+{
+  "data": {
+    "parseImage": {
+      "readResults": [
+        {
+          "name": "sku",
+          "value": "00012345678",
+          "confidence": 0.1
+        },
+        {
+          "name": "lot",
+          "value": "A1B",
+          "confidence": 0.5
+        }
+      ]
+    }
+  }
+}
+```"""
+  parseImage(input: ParseImageInput!): ParseImageResult!
+  """Creates an exception in the Kargo system, allows a customer to create their own exceptions.
+These exceptions will show on the dashboard as "Customer Exception" and will show the customer
+exception description on the detail page."""
+  createException(input: CreateExceptionInput!): CreateExceptionResult!
+  """Processes a JSON payload after verifying facility permissions."""
+  processPayload(input: ProcessPayloadInput!): ProcessPayloadResult!
+}
+
+type Order {
+  externalId: ID!
+  facilityId: Int!
+  facility: Facility!
+  """The unique identifier for this Order. It can be provided and used by customer to identify the specific order.
+This orderNumber is usually the same as customer's internal order number."""
+  orderNumber: String
+  direction: OrderDirection!
+  orderType: String
+  purchaseOrder: String
+  requestedShipDate: String
+  requestedDeliveryDate: String
+  shipperName: String
+  shipperAddress: Address
+  shipperEmail: String
+  consigneeName: String
+  consigneePhoneNumber: String
+  carrier: String
+  carrierService: String
+  bolNumber: String
+  sealNumber: String
+  items: [OrderItem!]!
+  status: OrderStatus!
+  shipmentId: Int
+  clientName: String
+}
+
+enum OrderDirection {
+  OUTBOUND
+  INBOUND
+}
+
+input OrderInput {
+  businessSlug: String!
+  facilitySlug: String!
+  """The unique identifier for this Order. It can be provided and used by customer to identify the specific order.
+This orderNumber is usually the same as customer's internal order number."""
+  orderNumber: String
+  direction: OrderDirection!
+  orderType: String
+  purchaseOrder: String
+  requestedShipDate: String
+  requestedDeliveryDate: String
+  shipperName: String
+  shipperAddress: AddressInput
+  shipperEmail: String
+  consigneeName: String
+  consigneePhoneNumber: String
+  carrier: String
+  carrierService: String
+  bolNumber: String
+  sealNumber: String
+  items: [OrderItemInput!]!
+  shipmentId: Int
+  expectedQuantity: Int
+  clientName: String
+  """If true, this mutation will append items to an existing order. This is similar to the
+AddItemsToOrder mutation, but not equivalent. There are three key differences:
+  - It will overwrite any of the order's fields that are provided
+  - This mutation match to an order based on orderNumber
+  - This mutation will create an order if one does not exist"""
+  appendItems: Boolean
+  """Wayne Sanderson Farms (WSF) only. Items are matched to existing order items by
+description (the WSF line number). LPN + SKU + description identify an order
+item, so an existing item is only updated when every populated component agrees;
+blank LPN/SKU act as wildcards (e.g. assigning an LPN to a placeholder line).
+Items that do not match any existing item will be created as new items."""
+  updateByLineId: Boolean
+  """If true, indicates this order object has been created from an ASN."""
+  isASN: Boolean
+}
+
+type OrderItem {
+  id: ID!
+  identifier: String!
+  lpn: String
+  sku: String
+  quantity: Int!
+  quantityUnit: ShipperUnitType!
+  purchaseOrder: String
+  description: String
+  upc: String
+  weightPerUnit: Float
+  weightUnit: WeightUnit
+  height: Float
+  length: Float
+  dimensionUnit: DimensionUnit
+  isDangerousGood: Boolean
+  lot: String
+  expirationDate: String
+  manufacturingDate: String
+}
+
+input OrderItemInput {
+  identifier: String
+  lpn: String
+  sku: String
+  quantity: Int
+  quantityUnit: ShipperUnitType!
+  purchaseOrder: String
+  description: String
+  upc: String
+  weightPerUnit: Float
+  weightUnit: WeightUnit
+  height: Float
+  length: Float
+  dimensionUnit: DimensionUnit
+  isDangerousGood: Boolean
+  lot: String
+  expirationDate: String
+  manufacturingDate: String
+  subUnits: [CaseSubUnitInput!]
+  itemMetadata: JSON
+}
+
+enum OrderStatus {
+  CREATED
+  SCHEDULED
+  COMPLETED
+}
+
+input OrdersFilter {
+  direction: OrderDirection
+  startDate: String!
+  endDate: String!
+}
+
+union PalletImage = TaggedImage | UploadedImage
+
+enum PalletImageSource {
+  FORKLIFT
+  TOWER
+}
+
+"""Simply takes the business/facility slugs that you have been provided by Kargo
+along with the file which can be uploaded as explained in the mutation
+documentation above. You may also include a list of ids specific to your system
+Kargo will log these with the image parsing for billing and debugging purposes."""
+input ParseImageInput {
+  businessSlug: String!
+  facilitySlug: String!
+  file: Upload!
+  metadata: [ParseImageInputMetadataEntry!]!
+}
+
+"""Key/Value pair to describe a customer parseImage request ID. This is where a customer
+can include any informatino about the image they're uploading that will be saved
+along with the results of the image parsing. This is where unique label ids should be
+passed in, along with any other ids that are relevant for billing / debugging purposes."""
+input ParseImageInputMetadataEntry {
+  key: String!
+  value: String!
+}
+
+"""Key/Value pair to describe any metadata on a parse image result. Could be customer
+metadata that was passed in with the request, or kargo metadata that was generated
+during parsing."""
+type ParseImageMetadataEntry {
+  key: String!
+  value: String!
+}
+
+"""Returns the results of the kargo parse image mutation. These results will be
+contianed in readResults.
+The requestId can be used to link to a specific run for the image parsing and
+can be useful to save in case you have any questions about a specific request
+and its results.
+TemplateIds will return the templates that were matched for this specific
+parse image request, this ID will be internal to kargo, but again can be useful
+for any inquiries into performance.
+Metadata will return any customer supplied metadata for this parse image request
+along with any Kargo metadata."""
+type ParseImageResult {
+  readResults: [ResultField!]
+  requestId: String
+  templateIds: [Int!]
+  metadata: [ParseImageMetadataEntry!]
+}
+
+input PostShipmentCreateOrderInput {
+  direction: OrderDirection!
+  orderType: String
+  purchaseOrder: String
+  orderNumber: String
+  requestedShipDate: String
+  requestedDeliveryDate: String
+  shipperName: String
+  shipperAddress: AddressInput
+  shipperEmail: String
+  consigneeName: String
+  consigneePhoneNumber: String
+  carrier: String
+  carrierService: String
+  bolNumber: String
+  sealNumber: String
+  items: [OrderItemInput!]!
+  expectedQuantity: Int
+  clientName: String
+}
+
+input ProcessPayloadInput {
+  businessSlug: String!
+  facilitySlug: String!
+  payload: JSON!
+}
+
+type ProcessPayloadResult {
+  success: Boolean!
+  message: String
+  loggingId: String!
+}
+
+type PushMessage {
+  """Unique id that can be used to ensure you don't process a message twice"""
+  id: Int!
+  """The message type"""
+  messageType: PushMessageTypes!
+  """The message encoded as a JSON string, see webhook documentation for more information about
+what fields to expect"""
+  message: String!
+  """Time stamp in UTC to know when the message was sent. You can track this and then use the
+snapshot api to load any missed messages when the subscription is closed."""
+  sentAt: String!
+  """Facility slug of the message"""
+  facilitySlug: String!
+  """Business slug of the message"""
+  businessSlug: String!
+}
+
+input PushMessageFilter {
+  """UTC String to filter for messages sent since a certain timestamp."""
+  since: String!
+  """Business slug is required."""
+  businessSlug: String!
+  """Facility slug is optional if you want to filter to a specific facility. Otherwise
+you will get messages for all facilities. You must have business permissions on your
+integration account to not use facility slug (this is the case with most integrations)."""
+  facilitySlug: String
+}
+
+input PushMessageSubscriptionFilter {
+  """Business slug is required."""
+  businessSlug: String!
+  """Facility slug is optional if you want to filter to a specific facility. Otherwise
+you will get messages for all facilities. You must have business permissions on your
+integration account to not use facility slug (this is the case with most integrations)."""
+  facilitySlug: String
+}
+
+"""An enum of the possible message type these correspond to the endpoints in the webhook:
+  PALLET_EVENT => /palletEvent
+  SHIPMENT_COMPLETE => /shipmentComplete
+Refer to webhook documentation for more information about what to expect for each of
+  these message types"""
+enum PushMessageTypes {
+  PALLET_EVENT
+  SHIPMENT_COMPLETE
+}
+
+type Query {
+  ping: Boolean!
+  """Retrieves a global list of Business objects stored by Kargo. Individual Business details are restricted by permission scope."""
+  businesses: [Business!]!
+  """Retrieves a single Shipment object by Kargo-ID."""
+  shipment(id: Int!): Shipment!
+  """Retrieves all push messages since a given timestamp for a business or facility"""
+  pushMessages(input: PushMessageFilter!): [PushMessage!]!
+  """Downloads the current agent implementation, used by the Kargo agent which runs
+inside the customer network and connects their systems to the kargo api
+The response comes with a single use token which can be can be used on
+api.kargo.zone/download_agent_with_token?token=<token> to perform the download
+Token is valid for 5 minutes after issuance"""
+  kargoAgent: KargoAgentDownloadToken
+}
+
+"""ResultField is the return type of a single field read off an image. It has the
+name of the field (we will communicate this when we set up the templates). It has
+the value of the field which was read of the image, and the confidence with which
+that value was able to be read. Confidence will be a number 0->1. It also includes
+locations from which the label information was read. This could be multiple locations
+as the field information could come from multiple locations on the label."""
+type ResultField {
+  name: String!
+  value: String!
+  confidence: Float
+  locations: [Coordinate!]
+}
+
+"""SKU object represents a SKU which is pegged to a specific facility where we expect it"""
+type SKU {
+  business_slug: String!
+  facility_slug: String!
+  sku_id: String!
+  description: String
+  created_at: String
+  updated_at: String
+  unit_of_measure: String
+  alternate_sku_ids: [String!]
+  sku_metadata: String
+}
+
+"""Input version of the SKU object"""
+input SKUEntry {
+  sku_id: String!
+  description: String
+  unit_of_measure: String
+  alternate_sku_ids: [String!]
+  sku_metadata: String
+}
+
+enum ServiceType {
+  AIR_LOOSE
+  AIR_INTACT
+  AIR_EXPORT
+}
+
+"""A Shipment object represents a single combination of <trailer, Order>. A trailer split into multiple Orders would map to multiple Shipment. Similarily an Order split across multiple trailers would map to multiple Shipments."""
+type Shipment {
+  """Internal Kargo-ID for Shipment object."""
+  id: Int!
+  """Facility object that this Shipment is associated with."""
+  facility: Facility!
+  """Kargo-ID for the Dock that this Shipment is associated with."""
+  dockId: Int
+  """Dock object that this Shipment is associated with."""
+  dock: Dock
+  """ShippingUnit containing the real and expected grouping of ShippingItems on this Shipment."""
+  cargo: [ShippingUnit!]!
+  """Retrieve a ShippingItem from this Shipment by partID."""
+  item(partID: String!): ShippingItem
+  """The ShippingDirection automatically assigned to this shipment."""
+  shippingDirection: ShippingDirection
+  """The UTC timestamp that this Shipment was first logged as ARRIVED by Kargo."""
+  arrivedAt: String
+  """The UTC timestamp for the first ShippingItem loggedo on this Shipment."""
+  loadingStartAt: String
+  """The UTC timestamp for the last ShippingItem loggedo on this Shipment."""
+  loadingEndAt: String
+  """The UTC timestamp that this Shipment was first logged as CLEARED by Kargo."""
+  departedAt: String
+  """PO# associated with this Shipment."""
+  purchaseOrder: String
+  """BOL-listed carrier associated with this Shipment."""
+  carrier: String
+  """Carrier service for this Shipment."""
+  carrierService: String
+  """History of statuses for this Shipment."""
+  statusEvents: [ShipmentStatusEvent!]!
+  """Current status for this Shipment."""
+  status: ShipmentStatus
+  """List of Order objects associated with this Shipment."""
+  orders: [Order!]!
+  """Customer-provided id for this Shipment."""
+  customerShipmentIdentifier: String
+  """When the scheduled shipment is expected to arrive at the facility."""
+  expectedArrivalAt: String
+  """Documents uploaded for this shipment."""
+  documents: [ShipmentDocument!]!
+}
+
+input ShipmentAdditionalField {
+  name: String!
+  value: String!
+}
+
+type ShipmentDocument {
+  id: ID!
+  type: String
+  externalId: String!
+  shipmentId: Int!
+  fileName: String!
+  fileUrl: String!
+  uploadedAt: String!
+}
+
+"""Input to filter the dates for Shipment objects being requested."""
+input ShipmentFilter {
+  """Earliest timestamp to include (inclusive)."""
+  since: String
+  """Latest UTC timestamp to include (inclusive)."""
+  before: String
+  query: String
+  dockSlugs: [String!]
+  shippingDirection: ShippingDirection
+  withDiscrepancies: Boolean
+}
+
+enum ShipmentStatus {
+  NEW
+  SCHEDULED
+  AT_FACILITY
+  DOOR_ASSIGNED
+  CHECKED_OUT
+  DOCKED
+  LOADING
+  UNLOADING
+  LOADED
+  UNLOADED
+  DEPARTED
+}
+
+type ShipmentStatusEvent {
+  status: ShipmentStatus!
+  displayName: String!
+  completed: Boolean!
+  completedAt: String
+}
+
+"""Represents the type of order associated with a shipment"""
+enum ShipmentType {
+  GATEWAY
+  GATEWAY_LOOP
+  DOCK_DOOR
+}
+
+"""An enum to be assigned to scheduled shipments as they progress through Kargo's status system."""
+enum ShipmentUpdateStatus {
+  """Appointment has been generated but has not yet arrived."""
+  SCHEDULED
+  """Truck driver checks in OR API request is received indicating the trailer has arrived."""
+  AT_FACILITY
+  """Dock door assigned."""
+  DOOR_ASSIGNED
+  """Checked Out."""
+  CHECKED_OUT
+}
+
+enum ShipperUnitType {
+  PALLET
+  CASE
+  UNIT
+}
+
+"""Each Shipment is automatically assigned a ShippingDirection. ShippingDirection is assigned when a Shipment is matched to an Order or when ShippinhItems are assigned ItemLoadingDirections."""
+enum ShippingDirection {
+  """Shipment contains exclusively UNLOADING ItemLoadingDirection ShippingItems."""
+  SHIPPING
+  """Shipment contains exclusively LOADING ItemLoadingDirection ShippingItems."""
+  RECEIVING
+  """Shipment contains both UNLOADING and LOADING ItemLoadingDirection ShippingItems."""
+  MIXED
+  """Shipment has not yet logged any ShippingItems and is not matched with any Order - unclear which ItemLoadingDirection ShippingItem will be moved."""
+  UNKNOWN
+}
+
+"""ShippingItem objects represent unique items that are tracked through Kargo towers. They are generated automatically as items pass through Kargo towers."""
+type ShippingItem {
+  """Part Number / SKU / Lot # / Serial Number assoicated with this ShippingItem. The specific string to include here is determined on configuration"""
+  partID: String!
+  """For label-controlled ShippingItems, the quantity read off of label. For case-controlled ShippingItems, the quantity of unique cases counted/."""
+  quantity: Int!
+  """UTC timestamp of wide-angle video found under videoUri."""
+  occurredAt: String!
+  """Shipment direction"""
+  direction: ShippingDirection
+  """All label information for this item"""
+  label: Label
+}
+
+"""ShippingItemAggregation objects represent aggregations of similiar items that are validated together. SKU or Lot controlled items are aggregated by least-significant key (captured in partID)."""
+type ShippingItemAggregation {
+  """Human-interpretable description of ShippingItem class. This is pulled from Receipts, Pick Lists, WMS, or BOLs."""
+  name: String
+  """Part Number / SKU / Lot # / Serial Number assoicated with this grouping of ShippingItems. The specific string to include here is determined on configuration"""
+  partID: String
+  """Sum of quantity values for all ShippingItems associated with this grouping of ShippingItems."""
+  quantity: Int
+}
+
+type ShippingItemImage {
+  imageUri: String!
+}
+
+type ShippingItemVideo {
+  videoUri: String!
+  videoThumbnailUri: String
+  cameraLocation: String
+}
+
+"""A ShippingUnit represents a combination of an expected list of items (manifest) and actual items counted by Kargo towers (items)."""
+type ShippingUnit {
+  """An artificially generated ShippingItemAggregation describing the expected contents of this Shipment."""
+  manifest: [ShippingItemAggregation!]!
+  """An automatically generated list of ShippingItems consisting of the real-world items tracked and associated wit this Shipment"""
+  items: [ShippingItem!]!
+}
+
+type Subscription {
+  """Subscription that receives all Kargo Push messages, alternative to the webhook based approach"""
+  pushMessage(filter: PushMessageSubscriptionFilter!): PushMessage!
+}
+
+"""One image from one field"""
+type TaggedImage {
+  id: ID!
+  url: String!
+  brightness: Float
+  identifier: String
+  imageSource: PalletImageSource!
+}
+
+"""Mutator to create a new shipment or update an existing one."""
+input UpdateShipmentInput {
+  """The short name referencing a business, e.g. "kargo"."""
+  businessSlug: String!
+  """The short name referencing a facility, e.g. "san-francisco"."""
+  facilitySlug: String!
+  """Unique facility-provided identification number for the shipment."""
+  shipmentNumber: String
+  """Facility-provided appointment slot. For appointment slots spanning multiple hours, the starting timestamp."""
+  expectedArrivalAt: String
+  """Direction of the Shipment associated with this Appointment."""
+  direction: ShippingDirection
+  """Carrier associated with the Shipment."""
+  carrier: String
+  """Carrier service associated with the Shipment, e.g. FTL / LTL / FCL / LCL."""
+  carrierService: String
+  """Trailer number associated with the Shipment associated with this Appointment."""
+  trailerNumber: String
+  """Indicates what kind of event occurred."""
+  status: ShipmentUpdateStatus
+  """When the event occurred, in ISO 8601 format."""
+  statusOccurredAt: String
+  """The short name referencing a dock, e.g. "D11"."""
+  dockSlug: String
+  """Name of driver for shipment"""
+  driverName: String
+  """License number of driver for shipment"""
+  driverLicenseNumber: String
+  """License plate number of vehicle driven by driver for shipment"""
+  driverLicensePlate: String
+  """Email of driver for shipment"""
+  driverEmailAddress: String
+  """Type of equipment used for shipment"""
+  equipmentType: EquipmentType
+  """Type of service used for shipment"""
+  serviceType: ServiceType
+  """Type of order associated with the shipment, e.g. GATEWAY_LOOP."""
+  shipmentType: ShipmentType
+  """Identification number for a container seal"""
+  sealNumber: String
+  additionalFields: [ShipmentAdditionalField!]
+}
+
+type UpdateShipmentResult {
+  success: Boolean!
+  id: Int!
+}
+
+scalar Upload
+
+"""One image uploaded by a user"""
+type UploadedImage {
+  id: ID!
+  url: String!
+  identifier: String
+  uploader: User
+  uploadTime: String
+}
+
+"""Input for upserting SKUs."""
+input UpsertSKUInput {
+  business_slug: String!
+  facility_slug: String!
+  SKUs: [SKUEntry!]!
+}
+
+"""Return value of upsert, return succesful added/update records"""
+type UpsertSKUResult {
+  numRecordsAdded: Int!
+  numRecordsUpdated: Int!
+}
+
+"""Minimum information to represent a User"""
+type User {
+  id: Int!
+  externalId: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+}
+
+enum WeightUnit {
+  POUND
+  KILOGRAM
+}

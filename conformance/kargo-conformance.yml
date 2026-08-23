@@ -1,0 +1,121 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/
+sources:
+- openapi/kargo-document-intake-openapi.yml
+- graphql/kargo-public-graphql.graphql
+- https://docs.kargo.ai/authentication
+- https://docs.kargo.ai/flat_file
+- https://mykargo.us.auth0.com/.well-known/openid-configuration
+standards:
+- id: openapi-3.1
+  conforms: true
+  evidence: 'openapi/kargo-document-intake-openapi.yml declares openapi: 3.1.0 and is
+    served by Kargo at https://api.kargo.zone/v1/docs/openapi.yaml'
+- id: graphql
+  conforms: true
+  evidence: 'https://api.kargo.zone/public_graphql answers a full __schema
+    introspection query anonymously with HTTP 200; SDL captured in
+    graphql/kargo-public-graphql.graphql (84 types, 5 queries, 11 mutations,
+    1 subscription)'
+- id: graphql-subscriptions
+  conforms: true
+  evidence: 'Subscription type present with pushMessage(filter:
+    PushMessageSubscriptionFilter!): PushMessage!, documented as an alternative to the
+    webhook push API'
+- id: oauth2
+  conforms: true
+  evidence: 'OAuth 2.0 client-credentials grant against
+    https://mykargo.us.auth0.com/oauth/token with audience
+    https://api.kargo.zone/public_graphql (RFC 6749 section 4.4)'
+- id: oauth2-rfc8414
+  conforms: true
+  evidence: 'https://mykargo.us.auth0.com/.well-known/oauth-authorization-server
+    returns HTTP 200 with a full authorization-server metadata document'
+- id: oidc-discovery
+  conforms: true
+  evidence: 'https://mykargo.us.auth0.com/.well-known/openid-configuration returns
+    HTTP 200; issuer https://mykargo.us.auth0.com/'
+- id: rfc9457-problem-details
+  conforms: true
+  evidence: 'Every 4xx response on both REST operations is declared
+    application/problem+json against a shared Problem schema with type/title/status/detail'
+- id: rfc6750-bearer-token
+  conforms: true
+  evidence: 'Authorization: Bearer <token> on every request; 401 "Missing or invalid
+    bearer token"'
+- id: as2-rfc4130
+  conforms: true
+  domain_standard: true
+  evidence: 'Kargo publishes a complete AS2 trading-partner connection profile for
+    flat-file exchange: endpoint
+    http://s-e6b8d16a14134ea39.server.transfer.us-west-1.amazonaws.com:5080/,
+    AS2-To identifier "KargoAS2", AES-256-CBC encryption against a downloadable Kargo
+    public certificate (SHA-256 fingerprint published), SHA-256 signing, synchronous
+    signed MDN receipts, binary (DER) content transfer encoding, and named MDN error
+    dispositions. Named AS2 software is called out by name (Cleo, mendelson, IBM
+    Sterling, OpenAS2).'
+  source: https://docs.kargo.ai/flat_file
+  note: 'This is the domain-standard signature for Kargo''s market. AS2 (RFC 4130) is
+    the transport that supply-chain EDI actually runs on; a shipper already exchanging
+    EDI over AS2 can onboard Kargo as a trading partner without a bespoke connector.
+    It is declared as configuration, not as marketing copy.'
+- id: edi
+  conforms: partial
+  domain_standard: true
+  evidence: 'Kargo lists EDI as an outbound file format alongside CSV and text for
+    end-of-shipment file transfer to a customer SFTP directory or email.'
+  source: https://docs.kargo.ai/
+  note: 'No EDI transaction set (856 ASN, 940, 945) is named in the docs, and no EDI
+    schema is published, so this is recorded as partial: the format is offered, the
+    message type is not declared. Kargo does advertise "Automated ASNs" as a product
+    capability on its site, which is the 856 shape, but the contract does not say so.'
+- id: fsma-204
+  conforms: false
+  claimed: true
+  evidence: 'kargo.ai markets an "FSMA Compliance" capability under Inventory
+    Management (lot code traceability, shelf-life management).'
+  source: https://www.kargo.ai/inventory-management
+  note: 'RECORDED AS A PRODUCT CLAIM, NOT A CONTRACT DECLARATION. Neither the OpenAPI
+    nor the GraphQL schema declares an FDA FSMA 204 Key Data Element / Critical
+    Tracking Event shape, a Traceability Lot Code identifier scheme, or any FSMA
+    vocabulary. The schema does carry lot and expiration-date fields, but generic
+    fields are not a standard.'
+- id: gs1-sscc
+  conforms: false
+  evidence: 'Kargo reads "LPN (License Plate Number)" values off pallet labels but
+    declares no GS1 identifier scheme, SSCC, GTIN or application-identifier parsing
+    in either contract.'
+- id: rfc9116-security-txt
+  conforms: false
+  evidence: '/.well-known/security.txt returns 404 on every Kargo host'
+- id: rfc8594-sunset-header
+  conforms: false
+  evidence: 'No Deprecation or Sunset header support documented; no deprecation policy
+    published'
+- id: rfc9457-problem-type-uris
+  conforms: false
+  evidence: 'Problem documents use "type": "about:blank" rather than dereferenceable
+    problem-type URIs'
+- id: asyncapi
+  conforms: false
+  evidence: 'A real event surface exists (webhook push API at shipment and pallet
+    level, plus a GraphQL pushMessage subscription) but no AsyncAPI document is
+    published. Captured instead as a webhook catalog in
+    asyncapi/kargo-push-webhooks.yml.'
+- id: idempotency-key-header
+  conforms: false
+  evidence: 'No Idempotency-Key header. Idempotency is delivered as upsert-by-natural-key
+    semantics instead — see conventions/kargo-conventions.yml.'
+compliance_program:
+  published: false
+  note: 'No trust center, no SOC 2 / ISO 27001 / PCI / HIPAA / FedRAMP claim, and no
+    security or compliance page found on any Kargo host. https://www.kargo.ai/security
+    and /trust both return 404. No Compliance pointer is emitted for this provider.'
+  probed:
+  - url: https://www.kargo.ai/security
+    status: 404
+  - url: https://www.kargo.ai/trust
+    status: 404
+  - url: https://trust.kargo.ai/
+    status: 000

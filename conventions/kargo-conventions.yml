@@ -1,0 +1,166 @@
+generated: '2026-08-23'
+method: searched
+source: https://docs.kargo.ai/rest-api
+sources:
+- https://docs.kargo.ai/rest-api
+- https://docs.kargo.ai/authentication
+- https://docs.kargo.ai/unified-endpoint
+- openapi/kargo-document-intake-openapi.yml
+authentication:
+  style: OAuth 2.0 client-credentials bearer token (Auth0)
+  header: 'Authorization: Bearer <access_token>'
+  token_url: https://mykargo.us.auth0.com/oauth/token
+  audience: https://api.kargo.zone/public_graphql
+  token_lifetime: 24 hours (expires_in 86400 in the published example)
+  caching_guidance: 'Kargo explicitly instructs callers to cache the token and use
+    expires_in to decide when to refresh.'
+  detail: authentication/kargo-authentication.yml
+idempotency:
+  supported: true
+  mechanism: upsert-by-natural-key
+  header: null
+  detail: 'Kargo does not publish an Idempotency-Key header. Idempotency is instead a
+    property of the data contract: POST /documents is an upsert keyed on
+    business + facility + direction + orderNumber (and shipmentNumber for the shipment),
+    and POST /sku_master is an upsert keyed on business + facility + sku_id. Replaying
+    the same document does not create a second shipment or order.'
+  caveats:
+  - 'The order-item level is NOT idempotent under the default strategy. With
+    orderItemUpdateStrategy OVERWRITE (the default when items are present and no
+    strategy is given), a replay removes the existing order_item rows and creates new
+    ones with new ids — the response goes from "created" to "removed"+"created" and the
+    ids change, even though the item content is identical.'
+  - 'MERGE is the item-level idempotent strategy: it updates an existing item matched
+    on lpn + sku instead of replacing the row.'
+  - 'APPEND is explicitly NOT idempotent: a replay containing an lpn + sku that already
+    exists on the matched order returns 409 Conflict.'
+  strategies:
+    field: orderItemUpdateStrategy
+    values:
+    - OVERWRITE
+    - MERGE
+    - APPEND
+    - DELETE
+    default: OVERWRITE (when items are supplied and no strategy is given)
+    levels:
+    - shipment-level (applies to every order in the document)
+    - order-level (per entry in orders[], overrides the shipment-level value)
+  source: https://docs.kargo.ai/rest-api
+request_tracing:
+  header: Correlation-Id
+  required: false
+  scope: POST /documents
+  behavior: 'Optional. Useful for request tracing and log lookup. When supplied, Kargo
+    returns the same value in the response.'
+  graphql_equivalent: 'The Unified Endpoint / processPayload response returns a
+    loggingId, which Kargo asks callers to save and quote when contacting support.'
+  source: https://docs.kargo.ai/rest-api
+pagination:
+  style: offset
+  surface: GET /sku_master
+  params:
+  - name: limit
+    in: query
+  - name: offset
+    in: query
+  response_fields: []
+  note: 'Offset pagination is documented only on the SKU master read. No pagination
+    contract is published for the GraphQL surface; its list fields take filter inputs
+    (ShipmentFilter, OrdersFilter, PushMessageFilter) rather than page cursors.'
+  source: openapi/kargo-document-intake-openapi.yml
+content_negotiation:
+  request_media_types:
+  - application/json
+  - application/xml
+  - text/xml
+  response_media_types:
+  - application/json
+  - application/problem+json
+  note: 'XML request bodies are a first-class option on both REST operations — an
+    unusual and deliberate accommodation for WMS/ERP systems that emit XML.'
+versioning:
+  scheme: uri-path
+  current: v1
+  base: https://api.kargo.zone/v1
+  spec_version: 1.0.0
+  note: 'The GraphQL surface is unversioned and is described by Kargo as the "legacy"
+    integration method, maintained for existing integrations.'
+  detail: lifecycle/kargo-lifecycle.yml
+error_envelope:
+  rest: RFC 9457 application/problem+json (type/title/status/detail)
+  graphql: standard GraphQL errors[]
+  unified_endpoint: '{ success: boolean, message: string, loggingId: string }'
+  detail: errors/kargo-problem-types.yml
+rate_limit_signaling:
+  documented: false
+  detail: rate-limits/kargo-rate-limits.yml
+metadata:
+  mechanism: shipment additionalFields
+  note: 'Arbitrary key/value pairs can be attached to a shipment through
+    additionalFields (ShipmentAdditionalField). Webhook payloads also carry
+    customer-specific label fields (LPN, SKUs, ExpirationDate, LotNumber, ...) whose
+    names are agreed per customer during integration.'
+field_expansion:
+  supported: false
+  note: 'REST returns fixed response shapes. Field selection on the GraphQL surface is
+    ordinary GraphQL selection-set behaviour, not a documented sparse-fieldset feature.'
+reversibility:
+  grade: documented
+  applies_to: write surface (POST /documents, POST /sku_master, and the GraphQL mutations)
+  summary: 'Kargo publishes reversal paths for the item-level writes but states no time
+    window for any of them, so this grades as documented rather than verified.'
+  operations:
+  - write: POST /documents with orderItemUpdateStrategy APPEND (adds order items)
+    operationId: createDocument
+    reversal: POST /documents with orderItemUpdateStrategy DELETE, targeting the same
+      lpn + sku
+    reversal_operationId: createDocument
+    window: null
+    window_source: null
+    note: 'The docs publish a deleteOrderItemByLpnAndSku example. No time limit on
+      the delete is stated anywhere in the documentation.'
+    source: https://docs.kargo.ai/rest-api
+  - write: POST /documents with orderItemUpdateStrategy OVERWRITE (replaces the whole item list)
+    operationId: createDocument
+    reversal: 'Re-send the complete previous item list. Kargo warns explicitly:
+      "Any existing item that is not included in the request is removed. Always send
+      the complete desired item list."'
+    reversal_operationId: createDocument
+    window: null
+    window_source: null
+    note: 'This is a destructive default. The removed order_item rows are not restored
+      by a replay — re-sending recreates equivalent rows with NEW ids, so any external
+      reference to the old order_item id is permanently broken. There is no undo,
+      restore, or soft-delete operation published.'
+    source: https://docs.kargo.ai/rest-api
+  - write: addItemsToOrder (GraphQL mutation)
+    operationId: addItemsToOrder
+    reversal: deleteItemsFromOrder
+    reversal_operationId: deleteItemsFromOrder
+    window: null
+    window_source: null
+    source: https://docs.kargo.ai/graphql/api/mutations/delete-items-from-order
+  - write: upsertSKUs (GraphQL mutation)
+    operationId: upsertSKUs
+    reversal: deleteSKUs
+    reversal_operationId: deleteSKUs
+    window: null
+    window_source: null
+    source: https://docs.kargo.ai/graphql/api/mutations/delete-skus
+  no_reversal_published:
+  - createShipmentAndOrder
+  - createOrder
+  - createOrUpdateOrder
+  - updateShipment
+  - createException
+  - parseImage
+  - processPayload
+  gaps:
+  - 'No cancel/void/delete operation is published for a shipment or an order — only
+    for order items and SKUs.'
+  - 'No reversal window is stated for any operation, so an agent cannot know how long
+    a correction remains possible.'
+dry_run_mode:
+  supported: false
+  note: 'No test/simulate/validate-only flag is published on any operation.'
+  detail: sandbox/kargo-sandbox.yml
