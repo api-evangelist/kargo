@@ -38,35 +38,13 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 apis:
-- name: Kargo Document Intake API
-  description: 'REST API for programmatic access to Kargo platform resources. Accepts
-    a single flattened document carrying shipment, order and order-item data, or a
-    shipment-level document with multiple orders, and upserts it against the Kargo
-    platform. Also carries the SKU master surface. JSON and XML request bodies, RFC
-    9457 problem+json errors, and an interactive Swagger reference.'
-  humanURL: https://docs.kargo.ai/rest-api
-  baseURL: https://api.kargo.zone/v1
-  tags:
-  - Documents
-  - SKU Master
-  - Shipping
-  - Logistics
-  properties:
-  - type: OpenAPI
-    url: openapi/kargo-document-intake-openapi.yml
-  - type: Overlay
-    url: overlays/kargo-document-intake-overlay.yaml
-  - type: APIReference
-    url: https://api.kargo.zone/v1/docs/
-  - type: Documentation
-    url: https://docs.kargo.ai/rest-api
 - name: Kargo Public GraphQL API
-  description: 'Kargo''s original public integration method, maintained for existing
-    integrations and still the surface behind the Unified Endpoint API. Exposes queries
-    for businesses, shipments, push messages and the Kargo agent download, mutations
-    for creating and updating shipments, orders, order items, SKUs, exceptions and
-    parsed images, and a pushMessage subscription as an alternative to webhooks. Anonymous
-    introspection is open.'
+  description: >-
+    Kargo's original public integration method, maintained for existing integrations and still the surface
+    behind the Unified Endpoint API. Exposes queries for businesses, shipments, push messages and the
+    Kargo agent download, mutations for creating and updating shipments, orders, order items, SKUs, exceptions
+    and parsed images, and a pushMessage subscription as an alternative to webhooks. Anonymous introspection
+    is open.
   humanURL: https://docs.kargo.ai/graphql/
   baseURL: https://api.kargo.zone/public_graphql
   tags:
@@ -81,7 +59,37 @@ apis:
     url: https://docs.kargo.ai/graphql/
   - type: Postman
     url: postman/kargo-public-graphql.postman_collection.json
+- aid: kargo:kargo-documents-api
+  name: Kargo Documents API
+  description: The Documents API from Kargo — 1 operation(s) for documents.
+  humanURL: https://docs.kargo.ai/rest-api
+  baseURL: https://api.kargo.zone/v1
+  tags:
+  - Documents
+  properties:
+  - type: OpenAPI
+    url: openapi/kargo-documents-api-openapi.yml
+  - type: APIReference
+    url: https://api.kargo.zone/v1/docs/
+  - type: Documentation
+    url: https://docs.kargo.ai/rest-api
+- aid: kargo:kargo-sku-master-api
+  name: Kargo SKU Master API
+  description: The SKU Master API from Kargo — 1 operation(s) for sku master.
+  humanURL: https://docs.kargo.ai/rest-api
+  baseURL: https://api.kargo.zone/v1
+  tags:
+  - SKU Master
+  properties:
+  - type: OpenAPI
+    url: openapi/kargo-sku-master-api-openapi.yml
+  - type: APIReference
+    url: https://api.kargo.zone/v1/docs/
+  - type: Documentation
+    url: https://docs.kargo.ai/rest-api
 common:
+- type: Overlay
+  url: overlays/kargo-document-intake-overlay.yaml
 - type: Website
   url: https://www.kargo.ai/
 - type: DeveloperPortal
