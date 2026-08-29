@@ -13,6 +13,18 @@ description: 'Kargo (Kargo Technologies, kargo.ai) builds an AI-powered smart lo
   alternative, and flat-file ingest over email, SFTP or AS2. All programmatic access is
   Auth0 OAuth 2.0 client-credentials bearer tokens.'
 url: https://raw.githubusercontent.com/api-evangelist/kargo/refs/heads/main/apis.yml
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: false
+  label: Hosted service · you call their endpoint
+  confidence: medium
+  source:
+  - openapi
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 image: https://www.kargo.ai/assets/images/favicon/apple-touch-icon.png
 x-type: company
 x-source: harvest:secondary-market
