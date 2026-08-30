@@ -1,0 +1,502 @@
+openapi: 3.2.0
+info:
+  title: Kargo Document Intake SKU Master API
+  version: 1.0.0
+  description: 'Accepts either a single flattened "document" that may carry shipment, order, and order item data, or a shipment level document with multiple orders in `orders`.
+
+    For the existing single order format, the document is upserted against an existing order by `orderNumber`; if no such order exists a new one is created, which also creates the associated shipment.
+
+    For the multi order format, the API processes every entry in `orders` against the same shipment level fields, such as `business`, `facility`, `direction`, and `shipmentNumber`.
+
+    `business`, `facility`, and `direction` are always required. Single order requests require top level `orderNumber`; multi order requests require `shipmentNumber` and a non-empty `orders` list, and each order in the list requires `orderNumber`.
+
+    For client generation or local tooling, download the [OpenAPI YAML spec](/v1/docs/openapi.yaml).
+
+    See the [Document Intake API Handbook](https://docs.kargo.ai/rest-api) for examples and workflow details.
+
+    '
+servers:
+- url: /v1
+security:
+- bearerAuth: []
+tags:
+- name: SKU Master
+paths:
+  /sku_master:
+    post:
+      operationId: upsertSkuMaster
+      summary: Create or update SKU master records
+      description: 'Creates or updates SKU master records for a facility. The request body is list-only: even a single SKU must be sent inside the `skus` array. Each SKU is upserted by `sku_id` within the provided `business` and `facility`. For existing SKUs, only fields provided in the request are updated; omitted fields are left unchanged.
+
+        '
+      tags:
+      - SKU Master
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsert:
+                summary: Upsert multiple SKUs
+                value:
+                  business: kargo
+                  facility: sf
+                  skus:
+                  - sku_id: TEST-SKU-001
+                    description: Test SKU 001
+                    unit_of_measure: CASE
+                    unit_of_weight: LB
+                    alternate_sku_ids:
+                    - ALT-001
+                    - UPC-001
+                    cases_per_pallet: 55
+                    cases_per_layer: 7
+                    layers_per_pallet: 10
+                    sku_metadata:
+                      source: local-test
+                      category: snack
+                  - sku_id: TEST-SKU-002
+                    description: Test SKU 002
+                    unit_of_measure: EACH
+                    cases_per_pallet: 43
+                    cases_per_layer: 6
+                    layers_per_pallet: 8
+                    sku_metadata:
+                      source: local-test
+              partialUpdate:
+                summary: Update only provided fields
+                description: 'This updates only the description. Other existing SKU fields are left unchanged.
+
+                  '
+                value:
+                  business: kargo
+                  facility: sf
+                  skus:
+                  - sku_id: TEST-SKU-001
+                    description: Updated SKU description
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsertXml:
+                summary: Upsert multiple SKUs with XML
+                value: "<SkuMasterUpsertRequest>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <skus>\n    <sku_id>TEST-SKU-001</sku_id>\n    <description>Test SKU 001</description>\n    <unit_of_measure>CASE</unit_of_measure>\n    <unit_of_weight>LB</unit_of_weight>\n    <alternate_sku_ids>ALT-001</alternate_sku_ids>\n    <alternate_sku_ids>UPC-001</alternate_sku_ids>\n    <cases_per_pallet>55</cases_per_pallet>\n    <cases_per_layer>7</cases_per_layer>\n    <layers_per_pallet>10</layers_per_pallet>\n    <sku_metadata>\n      <source>local-test</source>\n      <category>snack</category>\n    </sku_metadata>\n  </skus>\n  <skus>\n    <sku_id>TEST-SKU-002</sku_id>\n    <description>Test SKU 002</description>\n    <unit_of_measure>EACH</unit_of_measure>\n    <cases_per_pallet>43</cases_per_pallet>\n    <cases_per_layer>6</cases_per_layer>\n    <layers_per_pallet>8</layers_per_pallet>\n    <sku_metadata>\n      <source>local-test</source>\n    </sku_metadata>\n  </skus>\n</SkuMasterUpsertRequest>\n"
+          text/xml:
+            schema:
+              $ref: '#/components/schemas/SkuMasterUpsertRequest'
+            examples:
+              batchUpsertXml:
+                summary: Upsert multiple SKUs with XML
+                value: "<SkuMasterUpsertRequest>\n  <business>kargo</business>\n  <facility>sf</facility>\n  <skus>\n    <sku_id>TEST-SKU-001</sku_id>\n    <description>Test SKU 001</description>\n    <unit_of_measure>CASE</unit_of_measure>\n    <unit_of_weight>LB</unit_of_weight>\n    <alternate_sku_ids>ALT-001</alternate_sku_ids>\n    <alternate_sku_ids>UPC-001</alternate_sku_ids>\n    <cases_per_pallet>55</cases_per_pallet>\n    <cases_per_layer>7</cases_per_layer>\n    <layers_per_pallet>10</layers_per_pallet>\n    <sku_metadata>\n      <source>local-test</source>\n      <category>snack</category>\n    </sku_metadata>\n  </skus>\n</SkuMasterUpsertRequest>\n"
+      responses:
+        '200':
+          description: SKU master records were created or updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuMasterUpsertResult'
+        '400':
+          description: Malformed JSON or XML request body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Token lacks permission for the given business/facility.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Facility not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Unsupported media type; use application/json, application/xml, or text/xml.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: 'Semantically invalid request, such as missing `business` or `facility`, missing `sku_id`, duplicate `sku_id` values in the same request, invalid pagination value, or wrong field type.
+
+            '
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    get:
+      operationId: getSkuMaster
+      summary: Retrieve SKU master records
+      description: 'Returns SKU master records for a facility. If `sku_id` is provided, the response is filtered to that SKU. If `limit` is provided, pagination is enabled and `offset` defaults to 0. When another page is available, `next_offset` contains the offset to use for the next request.
+
+        Example request for all SKUs in a facility:
+
+        `GET /v1/sku_master?business=kargo&facility=sf`
+
+        Example request for one SKU:
+
+        `GET /v1/sku_master?business=kargo&facility=sf&sku_id=TEST-SKU-001`
+
+        Example paginated request:
+
+        `GET /v1/sku_master?business=kargo&facility=sf&limit=100&offset=0`
+
+        '
+      tags:
+      - SKU Master
+      parameters:
+      - name: business
+        in: query
+        required: true
+        description: Business slug that scopes the facility, same as `/v1/documents`.
+        schema:
+          type: string
+        example: kargo
+      - name: facility
+        in: query
+        required: true
+        description: Facility slug that scopes the SKU master records, same as `/v1/documents`.
+        schema:
+          type: string
+        example: sf
+      - name: sku_id
+        in: query
+        required: false
+        description: Optional SKU id filter. If omitted, all SKUs for the facility are returned.
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        description: 'Optional page size. When provided, pagination is enabled. The API caps this value at 100.
+
+          '
+        schema:
+          type: integer
+          minimum: 1
+      - name: offset
+        in: query
+        required: false
+        description: 'Number of records to skip when pagination is enabled. Defaults to 0 when `limit` is provided.
+
+          '
+        schema:
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          description: SKU master records for the requested facility.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkuMasterListResult'
+              examples:
+                fullList:
+                  summary: Full SKU master response
+                  value:
+                    skus:
+                    - business: kargo
+                      facility: sf
+                      sku_id: TEST-SKU-001
+                      description: Test SKU 001
+                      unit_of_measure: CASE
+                      unit_of_weight: LB
+                      alternate_sku_ids:
+                      - ALT-001
+                      - UPC-001
+                      cases_per_pallet: 55
+                      cases_per_layer: 7
+                      layers_per_pallet: 10
+                      sku_metadata:
+                        source: local-test
+                        category: snack
+                      created_at: '2026-06-05T12:00:00.000Z'
+                      updated_at: '2026-06-05T12:30:00.000Z'
+                    - business: kargo
+                      facility: sf
+                      sku_id: TEST-SKU-002
+                      description: Test SKU 002
+                      unit_of_measure: EACH
+                      unit_of_weight: null
+                      alternate_sku_ids: null
+                      cases_per_pallet: 43
+                      cases_per_layer: 6
+                      layers_per_pallet: 8
+                      sku_metadata:
+                        source: local-test
+                      created_at: '2026-06-05T12:05:00.000Z'
+                      updated_at: '2026-06-05T12:35:00.000Z'
+                    total: 2
+                    limit: null
+                    offset: null
+                    next_offset: null
+                paginated:
+                  summary: Paginated SKU master response
+                  value:
+                    skus:
+                    - business: kargo
+                      facility: sf
+                      sku_id: TEST-SKU-001
+                      description: Test SKU 001
+                      unit_of_measure: CASE
+                      unit_of_weight: LB
+                      alternate_sku_ids:
+                      - ALT-001
+                      cases_per_pallet: 55
+                      cases_per_layer: 7
+                      layers_per_pallet: 10
+                      sku_metadata:
+                        source: local-test
+                      created_at: '2026-06-05T12:00:00.000Z'
+                      updated_at: '2026-06-05T12:30:00.000Z'
+                    total: 25
+                    limit: 1
+                    offset: 0
+                    next_offset: 1
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Token lacks permission for the given business/facility.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Facility not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Invalid query parameter, such as missing `business` or `facility`, or invalid `limit` / `offset`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    SkuMasterUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - business
+      - facility
+      - skus
+      properties:
+        business:
+          type: string
+          description: Business slug that scopes the facility, same as `/v1/documents`.
+        facility:
+          type: string
+          description: Facility slug that scopes the SKU master upsert, same as `/v1/documents`.
+        skus:
+          type: array
+          description: 'List of SKU master records to create or update. This field is list-only; send a one-item array to update a single SKU.
+
+            '
+          items:
+            $ref: '#/components/schemas/SkuMasterInput'
+    SkuMasterListResult:
+      type: object
+      required:
+      - skus
+      - total
+      - limit
+      - offset
+      - next_offset
+      properties:
+        skus:
+          type: array
+          description: SKU master records matching the request.
+          items:
+            $ref: '#/components/schemas/SkuMaster'
+        total:
+          type: integer
+          description: Total number of SKU master records matching the filter before pagination.
+        limit:
+          type:
+          - integer
+          - 'null'
+          description: Page size used for this request. Null when pagination is not enabled.
+        offset:
+          type:
+          - integer
+          - 'null'
+          description: Offset used for this request. Null when pagination is not enabled.
+        next_offset:
+          type:
+          - integer
+          - 'null'
+          description: Offset to use for the next page. Null when there is no next page or pagination is not enabled.
+    SkuMasterUpsertResult:
+      type: object
+      required:
+      - numRecordsAdded
+      - numRecordsUpdated
+      - skus
+      properties:
+        numRecordsAdded:
+          type: integer
+          description: Number of SKU master records created by the request.
+        numRecordsUpdated:
+          type: integer
+          description: Number of existing SKU master records updated by the request.
+        skus:
+          type: array
+          description: SKU master records after the upsert operation.
+          items:
+            $ref: '#/components/schemas/SkuMaster'
+    SkuMasterInput:
+      type: object
+      additionalProperties: false
+      required:
+      - sku_id
+      description: 'Editable SKU master fields. `sku_id` is required and is used as the upsert key within the provided facility. All other fields are optional; when updating an existing SKU, omitted fields are left unchanged.
+
+        '
+      properties:
+        sku_id:
+          type: string
+          description: Unique SKU identifier within the facility.
+        description:
+          type:
+          - string
+          - 'null'
+          description: Human-readable description of the SKU.
+        unit_of_measure:
+          type:
+          - string
+          - 'null'
+          description: Unit used to measure SKU quantity, such as CASE, EACH, or PALLET.
+        unit_of_weight:
+          type:
+          - string
+          - 'null'
+          description: Unit used to measure SKU weight, such as LB or KG.
+        alternate_sku_ids:
+          type:
+          - array
+          - 'null'
+          description: Alternate SKU identifiers or barcodes associated with this SKU.
+          items:
+            type: string
+        cases_per_pallet:
+          type:
+          - integer
+          - 'null'
+          description: Number of cases that fit on one pallet for this SKU.
+        cases_per_layer:
+          type:
+          - integer
+          - 'null'
+          description: Number of cases in one pallet layer for this SKU.
+        layers_per_pallet:
+          type:
+          - integer
+          - 'null'
+          description: Number of layers per pallet for this SKU.
+        sku_metadata:
+          description: Additional SKU metadata stored as JSON.
+    SkuMaster:
+      type: object
+      description: SKU master record from the `sku_master` database table.
+      properties:
+        business:
+          type: string
+          description: Business slug associated with the SKU master record.
+        facility:
+          type: string
+          description: Facility slug associated with the SKU master record.
+        sku_id:
+          type: string
+          description: Unique SKU identifier within the facility.
+        description:
+          type:
+          - string
+          - 'null'
+          description: Human-readable description of the SKU.
+        unit_of_measure:
+          type:
+          - string
+          - 'null'
+          description: Unit used to measure SKU quantity, such as CASE, EACH, or PALLET.
+        unit_of_weight:
+          type:
+          - string
+          - 'null'
+          description: Unit used to measure SKU weight, such as LB or KG.
+        alternate_sku_ids:
+          type:
+          - array
+          - 'null'
+          description: Alternate SKU identifiers or barcodes associated with this SKU.
+          items:
+            type: string
+        cases_per_pallet:
+          type:
+          - integer
+          - 'null'
+          description: Number of cases that fit on one pallet for this SKU.
+        cases_per_layer:
+          type:
+          - integer
+          - 'null'
+          description: Number of cases in one pallet layer for this SKU.
+        layers_per_pallet:
+          type:
+          - integer
+          - 'null'
+          description: Number of layers per pallet for this SKU.
+        sku_metadata:
+          description: Additional SKU metadata stored as JSON.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the SKU master record was created.
+        updated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: Timestamp when the SKU master record was last updated.
+    Problem:
+      type: object
+      description: RFC 9457 problem detail.
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              detail:
+                type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
