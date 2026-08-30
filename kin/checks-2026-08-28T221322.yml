@@ -2,43 +2,35 @@
 kin_checks:
   slug: kargo
   schema_version: 0.15.1
-  scored_at: '2026-08-27'
-  run_ts: 2026-08-27T140727
+  scored_at: '2026-08-28'
+  run_ts: 2026-08-28T221322
   note: Actionable checks only (missed + partial). earned/na are every other check
     in rubric/scoring-0.15.1.yml; counts below let you verify that.
   counts:
     total: 130
-    earned: 55
+    earned: 58
     partial: 6
-    missed: 48
+    missed: 45
     na: 21
   checks:
-  - id: multiple_apis
-    status: missed
   - id: llms_txt_published
     status: missed
   - id: apis_json_self_hosted
     status: missed
   - id: openapi_3_2
     status: missed
-    detail: 0 of 1 openapi documents pass
+    detail: 0 of 2 openapi documents pass
   - id: openapi_3_0
     status: missed
-    detail: 0 of 1 openapi documents pass
+    detail: 0 of 2 openapi documents pass
   - id: info_complete
     status: missed
-    detail: 0 of 1 openapi documents pass
+    detail: 0 of 2 openapi documents pass
   - id: servers_resolvable
     status: missed
-  - id: components_reuse
-    status: missed
-    detail: 0 of 1 openapi documents pass
-  - id: security_schemes_defined
-    status: missed
-    detail: 0 of 1 openapi documents pass
   - id: webhooks_or_callbacks
     status: missed
-    detail: 0 of 1 openapi documents pass
+    detail: 0 of 2 openapi documents pass
   - id: json_schema_present
     status: missed
   - id: json_schema_per_resource
