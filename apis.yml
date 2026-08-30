@@ -36,6 +36,19 @@ tags:
 - Logistics
 - Supply Chain
 - Warehouse
+- Computer-Vision
+- Artificial Intelligence
+- Shipping
+- Inventory
+- Industrial Automation
+- Freight
+- GraphQL
+- Webhook
+tags_raw:
+- Company
+- Logistics
+- Supply Chain
+- Warehouse
 - Computer Vision
 - Artificial Intelligence
 - Shipping
@@ -60,6 +73,11 @@ apis:
   humanURL: https://docs.kargo.ai/graphql/
   baseURL: https://api.kargo.zone/public_graphql
   tags:
+  - GraphQL
+  - Shipping
+  - Logistics
+  - Webhook
+  tags_raw:
   - GraphQL
   - Shipping
   - Logistics
